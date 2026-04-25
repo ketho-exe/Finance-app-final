@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { DataSourceBanner } from "@/components/data-source-banner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { FinanceProvider } from "@/lib/finance-store";
 
@@ -36,7 +37,10 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FinanceProvider>
-            <AppShell>{children}</AppShell>
+            <AppShell>
+              <DataSourceBanner />
+              {children}
+            </AppShell>
           </FinanceProvider>
         </ThemeProvider>
       </body>
