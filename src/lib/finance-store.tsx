@@ -3,10 +3,6 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  cards as sampleCards,
-  pots as samplePots,
-  transactions as sampleTransactions,
-  wishlist as sampleWishlist,
   type MoneyCard,
   type Pot,
   type Transaction,
@@ -63,39 +59,16 @@ const defaultSalary: SalarySettings = {
 const FinanceContext = createContext<FinanceState | null>(null);
 const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-function readStored<T>(key: string, fallback: T) {
-  if (typeof window === "undefined") return fallback;
-
-  const raw = window.localStorage.getItem(key);
-  if (!raw) return fallback;
-
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function useStoredState<T>(key: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => readStored(key, fallback));
-
-  useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
-
-  return [value, setValue] as const;
-}
-
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState<SupabaseClient | null>(() => (supabaseConfigured ? createClient() : null));
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cards, setCards] = useStoredState("ledgerly.cards", sampleCards);
-  const [transactions, setTransactions] = useStoredState("ledgerly.transactions", sampleTransactions);
-  const [pots, setPots] = useStoredState("ledgerly.pots", samplePots);
-  const [wishlist, setWishlist] = useStoredState("ledgerly.wishlist", sampleWishlist);
-  const [salary, setSalary] = useStoredState("ledgerly.salary", defaultSalary);
+  const [cards, setCards] = useState<MoneyCard[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pots, setPots] = useState<Pot[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [salary, setSalary] = useState<SalarySettings>(defaultSalary);
   const userId = session?.user.id;
   const usingSupabase = Boolean(supabase && userId);
 
@@ -111,6 +84,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
+      if (!nextSession) {
+        setCards([]);
+        setTransactions([]);
+        setPots([]);
+        setWishlist([]);
+        setSalary(defaultSalary);
+      }
     });
 
     return () => {

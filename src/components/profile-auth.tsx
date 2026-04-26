@@ -1,47 +1,24 @@
 "use client";
 
-import type { Session } from "@supabase/supabase-js";
-import { LogOut, Mail, Save, UserRound } from "lucide-react";
+import { LogOut, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
+import { useFinance } from "@/lib/finance-store";
 
 type Profile = {
   display_name: string | null;
   currency: string;
 };
 
-const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
 export function ProfileAuth() {
-  const supabase = useMemo(() => (supabaseConfigured ? createClient() : null), []);
-  const [email, setEmail] = useState("");
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useFinance();
+  const supabase = useMemo(() => createClient(), []);
   const [profile, setProfile] = useState<Profile>({ display_name: "", currency: "GBP" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!supabase) return;
-
-    let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setSession(data.session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!supabase || !session?.user.id) return;
+    if (!session?.user.id) return;
 
     let active = true;
     supabase
@@ -58,22 +35,9 @@ export function ProfileAuth() {
     };
   }, [session?.user.id, supabase]);
 
-  async function sendMagicLink(event: React.FormEvent) {
-    event.preventDefault();
-    if (!supabase) return;
-    setLoading(true);
-    setMessage("");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/profile` },
-    });
-    setLoading(false);
-    setMessage(error ? error.message : "Magic link sent. Check your email.");
-  }
-
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
-    if (!supabase || !session?.user.id) return;
+    if (!session?.user.id) return;
     setLoading(true);
     setMessage("");
     const { error } = await supabase.from("profiles").upsert({
@@ -91,37 +55,7 @@ export function ProfileAuth() {
     setProfile({ display_name: "", currency: "GBP" });
   }
 
-  if (!supabaseConfigured) {
-    return (
-      <div className="surface p-5">
-        <h2 className="text-xl font-black">Supabase is not configured yet</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">Add these values to `.env.local` and to Vercel when deployed. Once present, this page becomes a magic-link login and profile editor.</p>
-        <pre className="mt-4 overflow-x-auto rounded-md bg-soft p-4 text-sm font-bold">
-{`NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=`}
-        </pre>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <form onSubmit={sendMagicLink} className="surface max-w-xl space-y-4 p-5">
-        <div className="flex items-center gap-3">
-          <Mail className="size-5 text-accent" />
-          <h2 className="text-xl font-black">Sign in with email</h2>
-        </div>
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Email address</span>
-          <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
-        </label>
-        <button disabled={loading} className="h-11 rounded-md bg-foreground px-4 font-black text-background disabled:opacity-60" type="submit">
-          {loading ? "Sending..." : "Send magic link"}
-        </button>
-        {message ? <p className="text-sm font-bold text-muted">{message}</p> : null}
-      </form>
-    );
-  }
+  if (!session) return null;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[360px_1fr]">

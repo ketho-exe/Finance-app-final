@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
-import { DataSourceBanner } from "@/components/data-source-banner";
+import { AuthGate } from "@/components/auth-gate";
 import { ThemeProvider } from "@/components/theme-provider";
 import { FinanceProvider } from "@/lib/finance-store";
 
@@ -24,7 +24,7 @@ const satoshi = localFont({
 export const metadata: Metadata = {
   title: "Ledgerly | UK finance tracker",
   description:
-    "A Supabase-ready financial tracking app for UK salary, cards, pots, wishlist goals, CSV imports, and cash-flow forecasts.",
+    "A private UK finance tracker for salary, cards, pots, wishlist goals, CSV imports, and cash-flow forecasts.",
 };
 
 export default function RootLayout({
@@ -37,10 +37,9 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FinanceProvider>
-            <AppShell>
-              <DataSourceBanner />
-              {children}
-            </AppShell>
+            <AuthGate>
+              <AppShell>{children}</AppShell>
+            </AuthGate>
           </FinanceProvider>
         </ThemeProvider>
       </body>

@@ -6,16 +6,13 @@ import {
   ArrowUpRight,
   BarChart3,
   BellRing,
-  Bot,
   CircleDollarSign,
   CreditCard,
   FileBarChart,
-  FileSpreadsheet,
   Gift,
   Home,
   PiggyBank,
   ReceiptText,
-  ShieldCheck,
   Users,
   User,
   Settings,
@@ -35,14 +32,10 @@ const navItems = [
   { href: "/statistics", label: "Statistics", icon: BarChart3 },
   { href: "/subscriptions", label: "Subscriptions", icon: BellRing },
   { href: "/budgets", label: "Budgets", icon: ReceiptText },
-  { href: "/safe-spend", label: "Safe Spend", icon: ShieldCheck },
   { href: "/upload", label: "CSV Upload", icon: Upload },
-  { href: "/csv-templates", label: "CSV Templates", icon: FileSpreadsheet },
-  { href: "/categorisation", label: "Categorisation", icon: Bot },
   { href: "/household", label: "Household", icon: Users },
-  { href: "/debt", label: "Debt Planner", icon: CreditCard },
   { href: "/reports", label: "Reports", icon: FileBarChart },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/profile", label: "Account", icon: User },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -82,8 +75,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
-          <p className="font-bold text-foreground">Supabase ready</p>
-          <p className="mt-1">Connect env vars, run the schema, and swap sample data for user-owned rows.</p>
+          <p className="font-bold text-foreground">Private workspace</p>
+          <p className="mt-1">Your cards, budgets, goals, and reports stay tied to your account.</p>
         </div>
       </aside>
 

@@ -5,9 +5,9 @@ export default function ProfilePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Profile"
-        title="Supabase auth and profile"
-        description="Sign in with a Supabase magic link and maintain a user profile that can own cards, pots, wishlist items, and transactions through RLS."
+        eyebrow="Account"
+        title="Your profile"
+        description="Manage your display name, currency preference, and account session."
       />
       <ProfileAuth />
     </>

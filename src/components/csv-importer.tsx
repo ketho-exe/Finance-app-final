@@ -63,7 +63,7 @@ export function CsvImporter() {
     <div className="surface p-5">
       <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-soft px-4 text-center">
         <span className="text-lg font-black">Drop in a bank CSV</span>
-        <span className="mt-2 max-w-lg text-sm text-muted">Columns such as Date, Merchant, Description, Amount, and Category will be previewed here before mapping to Supabase.</span>
+        <span className="mt-2 max-w-lg text-sm text-muted">Columns such as Date, Merchant, Description, Amount, and Category will be previewed here before import.</span>
         <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => handleFile(event.target.files?.[0])} />
       </label>
       {error ? <p className="mt-4 text-sm font-bold text-danger">{error}</p> : null}

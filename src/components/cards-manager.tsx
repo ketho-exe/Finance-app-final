@@ -2,6 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { calculateDebtPayoff } from "@/lib/finance-insights";
 import { GlideOverlay } from "@/components/glide-overlay";
 import { cardTransactions, type MoneyCard } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
@@ -22,6 +23,8 @@ export function CardsManager() {
   const { cards, transactions, saveCard, deleteCard } = useFinance();
   const [form, setForm] = useState<MoneyCard>(blankCard);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [focusedCard, setFocusedCard] = useState<MoneyCard | null>(null);
+  const [debtPayment, setDebtPayment] = useState(400);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -42,6 +45,44 @@ export function CardsManager() {
 
   return (
     <>
+      <GlideOverlay open={Boolean(focusedCard)} title={focusedCard?.name ?? "Card details"} onClose={() => setFocusedCard(null)}>
+        {focusedCard ? (
+          <div className="space-y-5">
+            <div className="rounded-md bg-soft p-4">
+              <p className="text-sm font-bold text-muted">{focusedCard.provider}</p>
+              <p className="mt-2 text-3xl font-black">{currency.format(focusedCard.balance)}</p>
+              <p className="mt-1 text-sm text-muted">{focusedCard.type === "credit" ? "Credit account" : "Account balance"}</p>
+            </div>
+            {focusedCard.type === "credit" || focusedCard.overdraft ? (
+              <div>
+                <h3 className="text-xl font-black">Debt payoff planner</h3>
+                <input type="range" min="50" max="1500" step="25" value={debtPayment} onChange={(event) => setDebtPayment(Number(event.target.value))} className="mt-4 w-full accent-[var(--accent)]" />
+                <p className="mt-2 text-sm font-bold text-muted">Monthly payment: {currency.format(debtPayment)}</p>
+                {calculateDebtPayoff([focusedCard], debtPayment).map((plan) => (
+                  <div key={plan.cardId} className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <MiniStat label="Debt" value={currency.format(plan.startingDebt)} />
+                    <MiniStat label="Months" value={String(plan.monthsToPayoff)} />
+                    <MiniStat label="Interest" value={currency.format(plan.totalInterest)} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted">Debt planning appears for credit cards or accounts with overdraft exposure.</p>
+            )}
+            <div>
+              <h3 className="text-xl font-black">Recent transactions</h3>
+              <div className="mt-2 divide-y divide-border">
+                {cardTransactions(focusedCard.id, transactions).slice(0, 8).map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                    <span className="font-bold">{transaction.merchant}</span>
+                    <span className={transaction.amount < 0 ? "font-black text-danger" : "font-black text-accent"}>{preciseCurrency.format(transaction.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </GlideOverlay>
       <div className="mb-5 flex justify-end">
         <button type="button" onClick={openAdd} className="flex h-11 items-center gap-2 rounded-md bg-foreground px-4 font-black text-background">
           <Plus className="size-4" />
@@ -88,7 +129,9 @@ export function CardsManager() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold text-muted">{card.provider}</p>
-                    <h2 className="text-2xl font-black">{card.name}</h2>
+                    <button type="button" onClick={() => setFocusedCard(card)} className="text-left text-2xl font-black hover:text-accent">
+                      {card.name}
+                    </button>
                   </div>
                   <div className="flex gap-2">
                     <button title="Edit card" type="button" onClick={() => openEdit(card)} className="grid size-9 place-items-center rounded-md border border-border">

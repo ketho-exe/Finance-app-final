@@ -1,4 +1,5 @@
 import { CsvImporter } from "@/components/csv-importer";
+import { CsvTemplatesContent } from "@/components/csv-templates-content";
 import { PageHeader } from "@/components/page-header";
 
 export default function UploadPage() {
@@ -7,9 +8,13 @@ export default function UploadPage() {
       <PageHeader
         eyebrow="CSV Upload"
         title="Import transactions from your bank"
-        description="Preview CSV files locally before mapping them into transaction rows. This is ready to connect to Supabase storage or database inserts."
+        description="Preview bank exports, map categories and cards, then import clean transaction rows."
       />
       <CsvImporter />
+      <section className="mt-6">
+        <PageHeader eyebrow="Templates" title="Supported bank formats" description="Column guides for common UK card and bank exports." />
+        <CsvTemplatesContent />
+      </section>
     </>
   );
 }

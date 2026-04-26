@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Landmark, TrendingUp, Wallet } from "lucide-react";
+import { ArrowRight, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { StatCard } from "@/components/stat-card";
 import { categorySpend } from "@/lib/finance";
+import { calculateSafeToSpendToday } from "@/lib/finance-insights";
 import { useFinance } from "@/lib/finance-store";
 import { currency } from "@/lib/utils";
 
@@ -17,6 +18,17 @@ export function DashboardContent() {
     .reduce((sum, item) => sum + Math.abs(item.amount), 0);
   const topCategory = Object.entries(categorySpend(transactions)).sort((a, b) => b[1] - a[1])[0];
   const potProgress = pots.length ? pots.reduce((sum, pot) => sum + pot.current / pot.target, 0) / pots.length : 0;
+  const currentBalance = cards.filter((card) => card.type === "current").reduce((sum, card) => sum + card.balance, 0);
+  const savingsTarget = pots.reduce((sum, pot) => sum + pot.monthlyContribution, 0);
+  const today = new Date();
+  const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1;
+  const safeSpend = calculateSafeToSpendToday({
+    balance: currentBalance,
+    upcomingBills: 1356,
+    savingsTarget,
+    daysLeftInMonth: daysLeft,
+    buffer: 250,
+  });
 
   return (
     <>
@@ -58,10 +70,13 @@ export function DashboardContent() {
           </div>
           <div className="surface p-5">
             <div className="flex items-center gap-3">
-              <Landmark className="size-5 text-accent-2" />
-              <h2 className="text-xl font-black">Supabase path</h2>
+              <ShieldCheck className="size-5 text-accent-2" />
+              <h2 className="text-xl font-black">Safe to spend today</h2>
             </div>
-            <p className="mt-3 text-sm leading-6 text-muted">Auth/profile screens are ready; once env vars are set, wire these local store actions to Supabase tables.</p>
+            <p className="mt-4 text-4xl font-black">{currency.format(safeSpend.safeToday)}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              After upcoming bills, savings contributions, and a buffer, {currency.format(safeSpend.discretionaryRemaining)} remains for the month.
+            </p>
           </div>
         </div>
       </section>

@@ -3,11 +3,10 @@ import { PageHeader } from "@/components/page-header";
 
 const settings = [
   "Light, dark, and system theme support",
-  "Supabase browser and server clients",
-  "Supabase auth and profile page",
-  "Vercel-ready environment variable names",
   "Self-hosted Satoshi font files",
-  "Local CRUD store ready to replace with database queries",
+  "Password sign-in with optional magic link",
+  "Private account data for cards, pots, wishlist, and transactions",
+  "PDF monthly reports",
 ];
 
 export default function SettingsPage() {
@@ -15,8 +14,8 @@ export default function SettingsPage() {
     <>
       <PageHeader
         eyebrow="Settings"
-        title="Deployment and app preferences"
-        description="A setup page for the pieces you will connect after creating your Supabase project and Vercel deployment."
+        title="App preferences"
+        description="A quick overview of enabled workspace features and account behaviour."
       />
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="surface p-5">
@@ -31,13 +30,8 @@ export default function SettingsPage() {
           </div>
         </section>
         <section className="surface p-5">
-          <h2 className="text-xl font-black">Environment variables</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">Add these to `.env.local` for local work and to Vercel Project Settings for production.</p>
-          <pre className="mt-4 overflow-x-auto rounded-md bg-soft p-4 text-sm font-bold text-foreground">
-{`NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=`}
-          </pre>
+          <h2 className="text-xl font-black">Workspace defaults</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">Ledgerly keeps each signed-in workspace separate, uses GBP by default, and gives every user a private set of cards, transactions, goals, budgets, and reports.</p>
         </section>
       </div>
     </>
