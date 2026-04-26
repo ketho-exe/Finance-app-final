@@ -2,15 +2,16 @@
 
 import { CategoryChart } from "@/components/charts/category-chart";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
-import { categorySpend, monthlyCashFlow } from "@/lib/finance";
+import { categorySpend } from "@/lib/finance";
+import { buildCashFlowSeries } from "@/lib/finance-insights";
 import { useFinance } from "@/lib/finance-store";
 import { currency } from "@/lib/utils";
 
 export function StatisticsContent() {
-  const { transactions } = useFinance();
+  const { transactions, salary } = useFinance();
   const ranked = Object.entries(categorySpend(transactions)).sort((a, b) => b[1] - a[1]);
   const top = ranked[0];
-  const predictedNet = monthlyCashFlow().slice(-2).reduce((sum, item) => sum + item.net, 0);
+  const predictedNet = buildCashFlowSeries({ transactions, monthlySalary: salary.gross / 12 }).slice(-2).reduce((sum, item) => sum + item.net, 0);
   const outgoings = transactions.filter((item) => item.amount < 0);
   const avgTransaction = outgoings.reduce((sum, item) => sum + Math.abs(item.amount), 0) / Math.max(1, outgoings.length);
 
@@ -42,7 +43,7 @@ export function StatisticsContent() {
         <div className="surface p-5">
           <h2 className="text-xl font-black">Cash flow graph</h2>
           <p className="mb-4 mt-1 text-sm text-muted">Income, outgoings, and net movement with forecast months included.</p>
-          <CashFlowChart />
+          <CashFlowChart transactions={transactions} monthlySalary={salary.gross / 12} />
         </div>
       </section>
     </>

@@ -11,6 +11,10 @@ import {
   transactionToRow,
   wishlistFromRow,
   wishlistToRow,
+  budgetFromRow,
+  budgetToRow,
+  subscriptionFromRow,
+  subscriptionToRow,
 } from "../src/lib/supabase-finance";
 
 test("maps card rows to UI cards and back", () => {
@@ -71,4 +75,22 @@ test("maps pot, wishlist, and salary rows", () => {
   assert.equal(potToRow({ id: "p1", name: "Trip", kind: "goal", current: 10, target: 100, monthlyContribution: 5 }, "user-1").target_amount, 100);
   assert.equal(wishlistToRow({ id: "w1", name: "Chair", price: 300, saved: 20, priority: "High" }, "user-1").saved_amount, 20);
   assert.equal(salaryToRow({ gross: 60000, pension: 6, studentLoan: "plan2" }, "user-1").gross_annual, 60000);
+});
+
+test("maps budget and subscription rows", () => {
+  const budget = budgetFromRow({ id: "b1", category: "Groceries", monthly_limit: "450" });
+  assert.equal(budget.monthlyLimit, 450);
+  assert.equal(budgetToRow(budget, "user-1").category, "Groceries");
+
+  const subscription = subscriptionFromRow({
+    id: "s1",
+    name: "Netflix",
+    amount: "17.99",
+    category: "Entertainment",
+    card_id: "00000000-0000-4000-8000-000000000001",
+    renewal_day: 27,
+    warning_days: 7,
+  });
+  assert.equal(subscription.amount, 17.99);
+  assert.equal(subscriptionToRow(subscription, "user-1").renewal_day, 27);
 });

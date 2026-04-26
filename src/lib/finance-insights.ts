@@ -100,6 +100,44 @@ export function calculateBudgetUsage(items: Budget[], transactions: Transaction[
   });
 }
 
+export function buildCashFlowSeries({
+  transactions,
+  monthlySalary,
+  startDate,
+  months = 6,
+}: {
+  transactions: Transaction[];
+  monthlySalary: number;
+  startDate?: Date;
+  months?: number;
+}) {
+  const anchor = startDate ?? new Date();
+  const firstMonth = startDate
+    ? new Date(anchor.getFullYear(), anchor.getMonth(), 1)
+    : new Date(anchor.getFullYear(), anchor.getMonth() - (months - 1), 1);
+
+  return Array.from({ length: months }, (_, index) => {
+    const monthDate = new Date(firstMonth.getFullYear(), firstMonth.getMonth() + index, 1);
+    const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+    const monthTransactions = transactions.filter((transaction) => transaction.date.startsWith(key));
+    const transactionIncome = monthTransactions
+      .filter((transaction) => transaction.amount > 0)
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const income = transactionIncome > 0 ? transactionIncome : monthlySalary;
+    const outgoings = monthTransactions
+      .filter((transaction) => transaction.amount < 0)
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+
+    return {
+      month: monthDate.toLocaleString("en-GB", { month: "short" }),
+      income,
+      outgoings,
+      net: income - outgoings,
+      predicted: transactionIncome === 0,
+    };
+  });
+}
+
 export function calculateSafeToSpendToday({
   balance,
   upcomingBills,

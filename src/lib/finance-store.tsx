@@ -8,6 +8,7 @@ import {
   type Transaction,
   type WishlistItem,
 } from "@/lib/finance";
+import type { Budget, Subscription } from "@/lib/finance-insights";
 import { removeById, upsertById } from "@/lib/finance-store-actions";
 import {
   cardFromRow,
@@ -16,6 +17,10 @@ import {
   potToRow,
   salaryFromRow,
   salaryToRow,
+  budgetFromRow,
+  budgetToRow,
+  subscriptionFromRow,
+  subscriptionToRow,
   transactionFromRow,
   transactionToRow,
   wishlistFromRow,
@@ -35,6 +40,8 @@ type FinanceState = {
   pots: Pot[];
   wishlist: WishlistItem[];
   salary: SalarySettings;
+  budgets: Budget[];
+  subscriptions: Subscription[];
   session: Session | null;
   usingSupabase: boolean;
   loading: boolean;
@@ -48,6 +55,10 @@ type FinanceState = {
   saveWishlistItem: (item: WishlistItem) => void;
   deleteWishlistItem: (id: string) => void;
   setSalary: (settings: SalarySettings) => void;
+  saveBudget: (budget: Budget) => void;
+  deleteBudget: (id: string) => void;
+  saveSubscription: (subscription: Subscription) => void;
+  deleteSubscription: (id: string) => void;
 };
 
 const defaultSalary: SalarySettings = {
@@ -69,6 +80,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [pots, setPots] = useState<Pot[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [salary, setSalary] = useState<SalarySettings>(defaultSalary);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const userId = session?.user.id;
   const usingSupabase = Boolean(supabase && userId);
 
@@ -90,6 +103,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setPots([]);
         setWishlist([]);
         setSalary(defaultSalary);
+        setBudgets([]);
+        setSubscriptions([]);
       }
     });
 
@@ -109,17 +124,19 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError("");
 
-      const [cardResult, transactionResult, potResult, wishlistResult, salaryResult] = await Promise.all([
+      const [cardResult, transactionResult, potResult, wishlistResult, salaryResult, budgetResult, subscriptionResult] = await Promise.all([
         supabase.from("cards").select("*").order("created_at", { ascending: false }),
         supabase.from("transactions").select("*").order("transaction_date", { ascending: false }),
         supabase.from("pots").select("*").order("created_at", { ascending: false }),
         supabase.from("wishlist_items").select("*").order("created_at", { ascending: false }),
         supabase.from("salary_settings").select("*").eq("user_id", session.user.id).maybeSingle(),
+        supabase.from("budgets").select("*").order("created_at", { ascending: false }),
+        supabase.from("subscriptions").select("*").eq("active", true).order("created_at", { ascending: false }),
       ]);
 
       if (!active) return;
 
-      const firstError = cardResult.error ?? transactionResult.error ?? potResult.error ?? wishlistResult.error ?? salaryResult.error;
+      const firstError = cardResult.error ?? transactionResult.error ?? potResult.error ?? wishlistResult.error ?? salaryResult.error ?? budgetResult.error ?? subscriptionResult.error;
       if (firstError) {
         setError(firstError.message);
         setLoading(false);
@@ -131,6 +148,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       setPots((potResult.data ?? []).map((row) => potFromRow(row)));
       setWishlist((wishlistResult.data ?? []).map((row) => wishlistFromRow(row)));
       if (salaryResult.data) setSalary(salaryFromRow(salaryResult.data));
+      setBudgets((budgetResult.data ?? []).map((row) => budgetFromRow(row)));
+      setSubscriptions((subscriptionResult.data ?? []).map((row) => subscriptionFromRow(row)));
       setLoading(false);
     }
 
@@ -139,7 +158,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [session?.user.id, setCards, setPots, setSalary, setTransactions, setWishlist, supabase]);
+  }, [session?.user.id, setBudgets, setCards, setPots, setSalary, setSubscriptions, setTransactions, setWishlist, supabase]);
 
   const persistCard = useCallback(async (card: MoneyCard) => {
     if (!supabase || !userId) return;
@@ -175,6 +194,20 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     if (saveError) setError(saveError.message);
   }, [supabase, userId]);
 
+  const persistBudget = useCallback(async (budget: Budget) => {
+    if (!supabase || !userId) return;
+    const { data, error: saveError } = await supabase.from("budgets").upsert(budgetToRow(budget, userId)).select().single();
+    if (saveError) setError(saveError.message);
+    if (data) setBudgets((items) => upsertById(items, budgetFromRow(data)));
+  }, [setBudgets, supabase, userId]);
+
+  const persistSubscription = useCallback(async (subscription: Subscription) => {
+    if (!supabase || !userId) return;
+    const { data, error: saveError } = await supabase.from("subscriptions").upsert(subscriptionToRow(subscription, userId)).select().single();
+    if (saveError) setError(saveError.message);
+    if (data) setSubscriptions((items) => upsertById(items, subscriptionFromRow(data)));
+  }, [setSubscriptions, supabase, userId]);
+
   const value = useMemo<FinanceState>(
     () => ({
       cards,
@@ -182,6 +215,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       pots,
       wishlist,
       salary,
+      budgets,
+      subscriptions,
       session,
       usingSupabase,
       loading,
@@ -222,8 +257,24 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setSalary(settings);
         void persistSalary(settings);
       },
+      saveBudget: (budget) => {
+        setBudgets((items) => upsertById(items, budget));
+        void persistBudget(budget);
+      },
+      deleteBudget: (id) => {
+        setBudgets((items) => removeById(items, id));
+        if (supabase && userId) void supabase.from("budgets").delete().eq("id", id).eq("user_id", userId);
+      },
+      saveSubscription: (subscription) => {
+        setSubscriptions((items) => upsertById(items, subscription));
+        void persistSubscription(subscription);
+      },
+      deleteSubscription: (id) => {
+        setSubscriptions((items) => removeById(items, id));
+        if (supabase && userId) void supabase.from("subscriptions").delete().eq("id", id).eq("user_id", userId);
+      },
     }),
-    [cards, transactions, pots, wishlist, salary, session, usingSupabase, loading, error, setCards, setTransactions, setPots, setWishlist, supabase, userId, setSalary, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem],
+    [cards, transactions, pots, wishlist, salary, budgets, subscriptions, session, usingSupabase, loading, error, setCards, setTransactions, setPots, setWishlist, supabase, userId, setSalary, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem, persistBudget, persistSubscription],
   );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

@@ -10,7 +10,7 @@ import { useFinance } from "@/lib/finance-store";
 import { currency } from "@/lib/utils";
 
 export function DashboardContent() {
-  const { cards, pots, transactions } = useFinance();
+  const { cards, pots, transactions, salary } = useFinance();
   const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
   const monthlyIncome = transactions.filter((item) => item.category === "Income").slice(0, 1)[0]?.amount ?? 0;
   const monthlySpend = transactions
@@ -47,7 +47,7 @@ export function DashboardContent() {
             </div>
             <TrendingUp className="size-5 text-accent" />
           </div>
-          <CashFlowChart />
+          <CashFlowChart transactions={transactions} monthlySalary={salary.gross / 12} />
         </div>
         <div className="space-y-4">
           <div className="surface p-5">

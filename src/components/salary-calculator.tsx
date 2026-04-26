@@ -71,6 +71,9 @@ export function SalaryCalculator() {
           Estimate uses England/Wales/NI bands, employee NI, pension relief before tax, and current-style student loan thresholds. Monthly net is{" "}
           <span className="font-black text-foreground">{preciseCurrency.format(result.takeHomeMonthly)}</span>.
         </p>
+        <p className="mt-3 rounded-md bg-soft px-3 py-2 text-sm font-bold text-muted">
+          Salary settings save automatically and feed the cash-flow forecast.
+        </p>
       </div>
     </div>
   );

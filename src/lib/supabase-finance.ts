@@ -1,4 +1,5 @@
 import type { Category, MoneyCard, Pot, Transaction, WishlistItem } from "@/lib/finance";
+import type { Budget, Subscription } from "@/lib/finance-insights";
 import type { SalarySettings } from "@/lib/finance-store";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -128,5 +129,48 @@ export function salaryToRow(salary: SalarySettings, userId: string) {
     pension_percent: salary.pension,
     student_loan_plan: salary.studentLoan,
     updated_at: new Date().toISOString(),
+  };
+}
+
+export function budgetFromRow(row: Record<string, unknown>): Budget {
+  return {
+    id: String(row.id),
+    category: row.category as Category,
+    monthlyLimit: numberValue(row.monthly_limit),
+  };
+}
+
+export function budgetToRow(budget: Budget, userId: string) {
+  return {
+    id: rowId(budget.id),
+    user_id: userId,
+    category: budget.category,
+    monthly_limit: budget.monthlyLimit,
+  };
+}
+
+export function subscriptionFromRow(row: Record<string, unknown>): Subscription {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    amount: numberValue(row.amount),
+    category: row.category as Category,
+    cardId: String(row.card_id ?? ""),
+    renewalDay: numberValue(row.renewal_day),
+    warningDays: numberValue(row.warning_days),
+  };
+}
+
+export function subscriptionToRow(subscription: Subscription, userId: string) {
+  return {
+    id: rowId(subscription.id),
+    user_id: userId,
+    name: subscription.name,
+    amount: subscription.amount,
+    category: subscription.category,
+    card_id: rowId(subscription.cardId) ?? null,
+    renewal_day: subscription.renewalDay,
+    warning_days: subscription.warningDays,
+    active: true,
   };
 }

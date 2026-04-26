@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { cards, transactions } from "../src/lib/finance";
 import {
+  buildCashFlowSeries,
   calculateDebtPayoff,
   calculateSafeToSpendToday,
   findUpcomingRenewals,
@@ -48,4 +49,22 @@ test("calculateDebtPayoff estimates months and interest", () => {
   assert.equal(result.length, 1);
   assert.equal(result[0].cardName, "Rewards Credit");
   assert.ok(result[0].monthsToPayoff > 0);
+});
+
+test("buildCashFlowSeries uses saved salary when income transactions are missing", () => {
+  const series = buildCashFlowSeries({
+    transactions: [
+      { id: "t1", date: "2026-04-10", merchant: "Rent", category: "Rent", amount: -1000, cardId: "card-1" },
+      { id: "t2", date: "2026-05-10", merchant: "Groceries", category: "Groceries", amount: -200, cardId: "card-1" },
+    ],
+    monthlySalary: 2500,
+    startDate: new Date("2026-04-01T00:00:00Z"),
+    months: 2,
+  });
+
+  assert.deepEqual(series.map((item) => item.month), ["Apr", "May"]);
+  assert.equal(series[0].income, 2500);
+  assert.equal(series[0].outgoings, 1000);
+  assert.equal(series[0].net, 1500);
+  assert.equal(series[1].income, 2500);
 });

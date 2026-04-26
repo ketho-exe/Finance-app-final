@@ -11,14 +11,23 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { monthlyCashFlow } from "@/lib/finance";
+import type { Transaction } from "@/lib/finance";
+import { buildCashFlowSeries } from "@/lib/finance-insights";
 import { currency } from "@/lib/utils";
 
-function CashFlowChartInner() {
+function CashFlowChartInner({
+  transactions,
+  monthlySalary,
+}: {
+  transactions: Transaction[];
+  monthlySalary: number;
+}) {
+  const data = buildCashFlowSeries({ transactions, monthlySalary });
+
   return (
     <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
-        <BarChart data={monthlyCashFlow()} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted)" />
           <YAxis tickFormatter={(value) => `£${Number(value) / 1000}k`} tickLine={false} axisLine={false} stroke="var(--muted)" />
