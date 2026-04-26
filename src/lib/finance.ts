@@ -1,17 +1,6 @@
-export type Category =
-  | "Income"
-  | "Rent"
-  | "Bills"
-  | "Groceries"
-  | "Eating out"
-  | "Transport"
-  | "Shopping"
-  | "Travel"
-  | "Health"
-  | "Entertainment"
-  | "Savings";
+export type Category = string;
 
-export const categories: Category[] = [
+export const categories = [
   "Income",
   "Rent",
   "Bills",
@@ -23,7 +12,7 @@ export const categories: Category[] = [
   "Health",
   "Entertainment",
   "Savings",
-];
+] satisfies Category[];
 
 export type Transaction = {
   id: string;
@@ -43,6 +32,7 @@ export type MoneyCard = {
   balance: number;
   limit?: number;
   overdraft?: number;
+  apr?: number;
   colour: string;
 };
 

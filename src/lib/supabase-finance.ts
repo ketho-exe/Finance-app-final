@@ -26,6 +26,7 @@ export function cardFromRow(row: Record<string, unknown>): MoneyCard {
     balance: numberValue(row.balance),
     limit: nullableNumber(row.credit_limit),
     overdraft: nullableNumber(row.overdraft_limit),
+    apr: nullableNumber(row.apr),
     colour: String(row.colour ?? "bg-[#0f766e]"),
   };
 }
@@ -40,6 +41,7 @@ export function cardToRow(card: MoneyCard, userId: string) {
     balance: card.balance,
     credit_limit: card.limit ?? null,
     overdraft_limit: card.overdraft ?? null,
+    ...(card.apr !== undefined ? { apr: card.apr } : {}),
     colour: card.colour,
   };
 }
@@ -158,6 +160,8 @@ export function subscriptionFromRow(row: Record<string, unknown>): Subscription 
     cardId: String(row.card_id ?? ""),
     renewalDay: numberValue(row.renewal_day),
     warningDays: numberValue(row.warning_days),
+    repeatPattern: (row.repeat_pattern as Subscription["repeatPattern"]) ?? "monthly",
+    startDate: row.start_date ? String(row.start_date) : undefined,
   };
 }
 
@@ -171,6 +175,65 @@ export function subscriptionToRow(subscription: Subscription, userId: string) {
     card_id: rowId(subscription.cardId) ?? null,
     renewal_day: subscription.renewalDay,
     warning_days: subscription.warningDays,
+    repeat_pattern: subscription.repeatPattern ?? "monthly",
+    start_date: subscription.startDate ?? null,
     active: true,
+  };
+}
+
+export function customCategoryFromRow(row: Record<string, unknown>) {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    colour: String(row.colour ?? "#2457c5"),
+  };
+}
+
+export function customCategoryToRow(category: { id: string; name: string; colour: string }, userId: string) {
+  return {
+    id: rowId(category.id),
+    user_id: userId,
+    name: category.name,
+    colour: category.colour,
+  };
+}
+
+export function csvTemplateFromRow(row: Record<string, unknown>) {
+  return {
+    id: String(row.id),
+    bankName: String(row.bank_name),
+    columns: Array.isArray(row.columns) ? row.columns.map(String) : [],
+    mapping: typeof row.mapping === "object" && row.mapping ? row.mapping as Record<string, string> : {},
+  };
+}
+
+export function csvTemplateToRow(template: { id: string; bankName: string; columns: string[]; mapping: Record<string, string> }, userId: string) {
+  return {
+    id: rowId(template.id),
+    user_id: userId,
+    bank_name: template.bankName,
+    columns: template.columns,
+    mapping: template.mapping,
+  };
+}
+
+export function reportExportFromRow(row: Record<string, unknown>) {
+  const summary = typeof row.summary === "object" && row.summary ? row.summary as Record<string, unknown> : {};
+  return {
+    id: String(row.id),
+    reportMonth: String(row.report_month),
+    format: String(row.format ?? "pdf"),
+    createdAt: String(row.created_at ?? ""),
+    summary,
+  };
+}
+
+export function reportExportToRow(report: { id: string; reportMonth: string; format: string; summary: Record<string, unknown> }, userId: string) {
+  return {
+    id: rowId(report.id),
+    user_id: userId,
+    report_month: report.reportMonth,
+    format: report.format,
+    summary: report.summary,
   };
 }

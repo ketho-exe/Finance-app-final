@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   BarChart3,
@@ -11,15 +12,19 @@ import {
   FileBarChart,
   Gift,
   Home,
+  Plus,
   PiggyBank,
   ReceiptText,
   Users,
   User,
   Settings,
+  Search,
   Upload,
   WalletCards,
 } from "lucide-react";
+import { GlideOverlay } from "@/components/glide-overlay";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useFinance } from "@/lib/finance-store";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -41,6 +46,22 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { error } = useFinance();
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const commands = useMemo(() => navItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -104,6 +125,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
             <div className="ml-auto flex items-center gap-2">
+              <button type="button" onClick={() => setCommandOpen(true)} className="hidden h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-bold text-muted sm:flex">
+                <Search className="size-4" />
+                Search
+              </button>
               <ThemeToggle />
             </div>
           </div>
@@ -122,8 +147,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </header>
-        <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="px-4 py-6 sm:px-6 lg:px-8">
+          {error ? <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-bold text-danger">Couldn’t save the latest change. Try again in a moment.</div> : null}
+          {children}
+        </main>
       </div>
+      <button type="button" onClick={() => setQuickAddOpen(true)} className="fixed bottom-5 right-5 z-30 grid size-14 place-items-center rounded-full bg-foreground text-background shadow-lg xl:hidden" title="Quick add">
+        <Plus className="size-6" />
+      </button>
+      <GlideOverlay open={quickAddOpen} title="Quick add" onClose={() => setQuickAddOpen(false)}>
+        <div className="grid gap-3">
+          {[
+            ["Transaction", "/transactions"],
+            ["Card", "/cards"],
+            ["Pot", "/pots"],
+            ["Subscription", "/subscriptions"],
+            ["Wishlist item", "/wishlist"],
+          ].map(([label, href]) => (
+            <Link key={href} href={href} onClick={() => setQuickAddOpen(false)} className="flex items-center justify-between rounded-md bg-soft px-4 py-3 font-black">
+              {label}
+              <ArrowUpRight className="size-4" />
+            </Link>
+          ))}
+        </div>
+      </GlideOverlay>
+      <GlideOverlay open={commandOpen} title="Command menu" onClose={() => setCommandOpen(false)}>
+        <div className="space-y-4">
+          <input autoFocus placeholder="Search pages or actions" value={query} onChange={(event) => setQuery(event.target.value)} className="focus-ring w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
+          <div className="grid gap-2">
+            {commands.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setCommandOpen(false)} className="flex items-center gap-3 rounded-md bg-soft px-4 py-3 font-black">
+                  <Icon className="size-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </GlideOverlay>
     </div>
   );
 }

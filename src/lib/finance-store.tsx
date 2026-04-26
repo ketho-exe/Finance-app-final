@@ -13,8 +13,14 @@ import { removeById, upsertById } from "@/lib/finance-store-actions";
 import {
   cardFromRow,
   cardToRow,
+  customCategoryFromRow,
+  customCategoryToRow,
+  csvTemplateFromRow,
+  csvTemplateToRow,
   potFromRow,
   potToRow,
+  reportExportFromRow,
+  reportExportToRow,
   salaryFromRow,
   salaryToRow,
   budgetFromRow,
@@ -34,6 +40,27 @@ export type SalarySettings = {
   studentLoan: "none" | "plan1" | "plan2" | "plan5";
 };
 
+export type CustomCategory = {
+  id: string;
+  name: string;
+  colour: string;
+};
+
+export type CsvTemplate = {
+  id: string;
+  bankName: string;
+  columns: string[];
+  mapping: Record<string, string>;
+};
+
+export type ReportExport = {
+  id: string;
+  reportMonth: string;
+  format: string;
+  createdAt: string;
+  summary: Record<string, unknown>;
+};
+
 type FinanceState = {
   cards: MoneyCard[];
   transactions: Transaction[];
@@ -42,6 +69,10 @@ type FinanceState = {
   salary: SalarySettings;
   budgets: Budget[];
   subscriptions: Subscription[];
+  customCategories: CustomCategory[];
+  categoryOptions: string[];
+  csvTemplates: CsvTemplate[];
+  reportExports: ReportExport[];
   session: Session | null;
   usingSupabase: boolean;
   loading: boolean;
@@ -59,6 +90,10 @@ type FinanceState = {
   deleteBudget: (id: string) => void;
   saveSubscription: (subscription: Subscription) => void;
   deleteSubscription: (id: string) => void;
+  saveCustomCategory: (category: CustomCategory) => void;
+  deleteCustomCategory: (id: string) => void;
+  saveCsvTemplate: (template: CsvTemplate) => void;
+  saveReportExport: (report: ReportExport) => void;
 };
 
 const defaultSalary: SalarySettings = {
@@ -82,6 +117,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [salary, setSalary] = useState<SalarySettings>(defaultSalary);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [csvTemplates, setCsvTemplates] = useState<CsvTemplate[]>([]);
+  const [reportExports, setReportExports] = useState<ReportExport[]>([]);
   const userId = session?.user.id;
   const usingSupabase = Boolean(supabase && userId);
 
@@ -105,6 +143,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setSalary(defaultSalary);
         setBudgets([]);
         setSubscriptions([]);
+        setCustomCategories([]);
+        setCsvTemplates([]);
+        setReportExports([]);
       }
     });
 
@@ -124,7 +165,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError("");
 
-      const [cardResult, transactionResult, potResult, wishlistResult, salaryResult, budgetResult, subscriptionResult] = await Promise.all([
+      const [cardResult, transactionResult, potResult, wishlistResult, salaryResult, budgetResult, subscriptionResult, categoryResult, csvTemplateResult, reportResult] = await Promise.all([
         supabase.from("cards").select("*").order("created_at", { ascending: false }),
         supabase.from("transactions").select("*").order("transaction_date", { ascending: false }),
         supabase.from("pots").select("*").order("created_at", { ascending: false }),
@@ -132,11 +173,14 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         supabase.from("salary_settings").select("*").eq("user_id", session.user.id).maybeSingle(),
         supabase.from("budgets").select("*").order("created_at", { ascending: false }),
         supabase.from("subscriptions").select("*").eq("active", true).order("created_at", { ascending: false }),
+        supabase.from("categories").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false }),
+        supabase.from("csv_templates").select("*").order("created_at", { ascending: false }),
+        supabase.from("report_exports").select("*").order("created_at", { ascending: false }),
       ]);
 
       if (!active) return;
 
-      const firstError = cardResult.error ?? transactionResult.error ?? potResult.error ?? wishlistResult.error ?? salaryResult.error ?? budgetResult.error ?? subscriptionResult.error;
+      const firstError = cardResult.error ?? transactionResult.error ?? potResult.error ?? wishlistResult.error ?? salaryResult.error ?? budgetResult.error ?? subscriptionResult.error ?? categoryResult.error ?? csvTemplateResult.error ?? reportResult.error;
       if (firstError) {
         setError(firstError.message);
         setLoading(false);
@@ -150,6 +194,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (salaryResult.data) setSalary(salaryFromRow(salaryResult.data));
       setBudgets((budgetResult.data ?? []).map((row) => budgetFromRow(row)));
       setSubscriptions((subscriptionResult.data ?? []).map((row) => subscriptionFromRow(row)));
+      setCustomCategories((categoryResult.data ?? []).map((row) => customCategoryFromRow(row)));
+      setCsvTemplates((csvTemplateResult.data ?? []).map((row) => csvTemplateFromRow(row)));
+      setReportExports((reportResult.data ?? []).map((row) => reportExportFromRow(row)));
       setLoading(false);
     }
 
@@ -208,6 +255,32 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     if (data) setSubscriptions((items) => upsertById(items, subscriptionFromRow(data)));
   }, [setSubscriptions, supabase, userId]);
 
+  const persistCustomCategory = useCallback(async (category: CustomCategory) => {
+    if (!supabase || !userId) return;
+    const { data, error: saveError } = await supabase.from("categories").upsert(customCategoryToRow(category, userId)).select().single();
+    if (saveError) setError(saveError.message);
+    if (data) setCustomCategories((items) => upsertById(items, customCategoryFromRow(data)));
+  }, [setCustomCategories, supabase, userId]);
+
+  const persistCsvTemplate = useCallback(async (template: CsvTemplate) => {
+    if (!supabase || !userId) return;
+    const { data, error: saveError } = await supabase.from("csv_templates").upsert(csvTemplateToRow(template, userId)).select().single();
+    if (saveError) setError(saveError.message);
+    if (data) setCsvTemplates((items) => upsertById(items, csvTemplateFromRow(data)));
+  }, [setCsvTemplates, supabase, userId]);
+
+  const persistReportExport = useCallback(async (report: ReportExport) => {
+    if (!supabase || !userId) return;
+    const { data, error: saveError } = await supabase.from("report_exports").insert(reportExportToRow(report, userId)).select().single();
+    if (saveError) setError(saveError.message);
+    if (data) setReportExports((items) => upsertById(items, reportExportFromRow(data)));
+  }, [setReportExports, supabase, userId]);
+
+  const categoryOptions = useMemo(() => {
+    const defaults = ["Income", "Rent", "Bills", "Groceries", "Eating out", "Transport", "Shopping", "Travel", "Health", "Entertainment", "Savings"];
+    return Array.from(new Set([...defaults, ...customCategories.map((category) => category.name)])).sort((a, b) => a.localeCompare(b));
+  }, [customCategories]);
+
   const value = useMemo<FinanceState>(
     () => ({
       cards,
@@ -217,6 +290,10 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       salary,
       budgets,
       subscriptions,
+      customCategories,
+      categoryOptions,
+      csvTemplates,
+      reportExports,
       session,
       usingSupabase,
       loading,
@@ -273,8 +350,24 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setSubscriptions((items) => removeById(items, id));
         if (supabase && userId) void supabase.from("subscriptions").delete().eq("id", id).eq("user_id", userId);
       },
+      saveCustomCategory: (category) => {
+        setCustomCategories((items) => upsertById(items, category));
+        void persistCustomCategory(category);
+      },
+      deleteCustomCategory: (id) => {
+        setCustomCategories((items) => removeById(items, id));
+        if (supabase && userId) void supabase.from("categories").delete().eq("id", id).eq("user_id", userId);
+      },
+      saveCsvTemplate: (template) => {
+        setCsvTemplates((items) => upsertById(items, template));
+        void persistCsvTemplate(template);
+      },
+      saveReportExport: (report) => {
+        setReportExports((items) => upsertById(items, report));
+        void persistReportExport(report);
+      },
     }),
-    [cards, transactions, pots, wishlist, salary, budgets, subscriptions, session, usingSupabase, loading, error, setCards, setTransactions, setPots, setWishlist, supabase, userId, setSalary, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem, persistBudget, persistSubscription],
+    [cards, transactions, pots, wishlist, salary, budgets, subscriptions, customCategories, categoryOptions, csvTemplates, reportExports, session, usingSupabase, loading, error, setCards, setTransactions, setPots, setWishlist, supabase, userId, setSalary, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem, persistBudget, persistSubscription, persistCustomCategory, persistCsvTemplate, persistReportExport],
   );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

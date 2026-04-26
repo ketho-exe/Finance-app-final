@@ -3,6 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
+import { planWishlistAffordability } from "@/lib/finance-insights";
 import type { WishlistItem } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
 import { currency, percent } from "@/lib/utils";
@@ -16,9 +17,11 @@ const blank: WishlistItem = {
 };
 
 export function WishlistManager() {
-  const { wishlist, saveWishlistItem, deleteWishlistItem } = useFinance();
+  const { wishlist, pots, saveWishlistItem, deleteWishlistItem } = useFinance();
   const [form, setForm] = useState<WishlistItem>(blank);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const monthlyWishSavings = pots.filter((pot) => pot.kind === "goal").reduce((sum, pot) => sum + pot.monthlyContribution, 0) || 100;
+  const plannedWishlist = planWishlistAffordability(wishlist, monthlyWishSavings);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -66,7 +69,7 @@ export function WishlistManager() {
         </form>
       </GlideOverlay>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {wishlist.map((item) => {
+        {plannedWishlist.map((item) => {
           const progress = Math.min(100, (item.saved / item.price) * 100);
           return (
             <article key={item.id} className="surface p-5">
@@ -90,6 +93,9 @@ export function WishlistManager() {
                 <div className="h-full rounded-full bg-accent-2" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-3 text-sm font-bold">{percent(progress)} ready</p>
+              <p className="mt-1 text-sm text-muted">
+                {item.monthsUntilAffordable === 0 ? "Ready to buy now" : `About ${item.monthsUntilAffordable} month${item.monthsUntilAffordable === 1 ? "" : "s"} at current goal saving pace`}
+              </p>
             </article>
           );
         })}

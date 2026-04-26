@@ -2,7 +2,7 @@
 
 import Papa from "papaparse";
 import { useState } from "react";
-import { categories, type Category } from "@/lib/finance";
+import type { Category } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
 
 type ParsedRow = {
@@ -16,8 +16,10 @@ type ParsedRow = {
 };
 
 export function CsvImporter() {
-  const { cards, saveTransaction } = useFinance();
+  const { cards, categoryOptions, csvTemplates, saveCsvTemplate, saveTransaction } = useFinance();
   const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
+  const [templateName, setTemplateName] = useState("");
   const [error, setError] = useState("");
 
   function handleFile(file?: File) {
@@ -27,10 +29,11 @@ export function CsvImporter() {
       skipEmptyLines: true,
       complete: (result) => {
         setError("");
+        setColumns(result.meta.fields ?? []);
         setRows(
           result.data.slice(0, 20).map((row) => ({
             ...row,
-            mappedCategory: categories.includes(row.Category as Category) ? (row.Category as Category) : "Groceries",
+            mappedCategory: categoryOptions.includes(row.Category as Category) ? (row.Category as Category) : "Groceries",
             mappedCardId: cards[0]?.id ?? "",
           })),
         );
@@ -59,6 +62,32 @@ export function CsvImporter() {
     setRows([]);
   }
 
+  function applyTemplate(templateId: string) {
+    const template = csvTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    setRows((current) =>
+      current.map((row) => ({
+        ...row,
+        mappedCategory: (template.mapping.defaultCategory as Category) ?? row.mappedCategory,
+        mappedCardId: template.mapping.defaultCardId ?? row.mappedCardId,
+      })),
+    );
+  }
+
+  function saveCurrentMapping() {
+    if (!rows.length) return;
+    saveCsvTemplate({
+      id: createId("csv-template"),
+      bankName: templateName || "Custom CSV",
+      columns,
+      mapping: {
+        defaultCategory: rows[0]?.mappedCategory ?? "Groceries",
+        defaultCardId: rows[0]?.mappedCardId ?? cards[0]?.id ?? "",
+      },
+    });
+    setTemplateName("");
+  }
+
   return (
     <div className="surface p-5">
       <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-soft px-4 text-center">
@@ -69,6 +98,16 @@ export function CsvImporter() {
       {error ? <p className="mt-4 text-sm font-bold text-danger">{error}</p> : null}
       {rows.length > 0 ? (
         <div className="mt-5 overflow-x-auto">
+          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <select defaultValue="" onChange={(event) => applyTemplate(event.target.value)} className="focus-ring rounded-md border border-border bg-background px-3 py-2 text-sm font-bold">
+              <option value="" disabled>Apply saved mapping</option>
+              {csvTemplates.map((template) => (
+                <option key={template.id} value={template.id}>{template.bankName}</option>
+              ))}
+            </select>
+            <input placeholder="Mapping name" value={templateName} onChange={(event) => setTemplateName(event.target.value)} className="focus-ring rounded-md border border-border bg-background px-3 py-2 text-sm font-bold" />
+            <button type="button" onClick={saveCurrentMapping} className="rounded-md border border-border px-3 py-2 text-sm font-black">Save mapping</button>
+          </div>
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="text-muted">
               <tr>
@@ -89,7 +128,7 @@ export function CsvImporter() {
                   <td className="border-b border-border py-3 font-bold">{row.Amount ?? "-"}</td>
                   <td className="border-b border-border py-3">
                     <select value={row.mappedCategory} onChange={(event) => updateRow(index, { mappedCategory: event.target.value as Category })} className="focus-ring w-full rounded-md border border-border bg-background px-2 py-2 font-bold">
-                      {categories.map((category) => (
+                      {categoryOptions.map((category) => (
                         <option key={category}>{category}</option>
                       ))}
                     </select>

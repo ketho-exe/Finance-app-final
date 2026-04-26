@@ -16,6 +16,7 @@ const blankCard: MoneyCard = {
   balance: 0,
   limit: undefined,
   overdraft: undefined,
+  apr: undefined,
   colour: "bg-[#0f766e]",
 };
 
@@ -25,6 +26,7 @@ export function CardsManager() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [focusedCard, setFocusedCard] = useState<MoneyCard | null>(null);
   const [debtPayment, setDebtPayment] = useState(400);
+  const [payoffMethod, setPayoffMethod] = useState<"snowball" | "avalanche">("avalanche");
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -56,8 +58,20 @@ export function CardsManager() {
             {focusedCard.type === "credit" || focusedCard.overdraft ? (
               <div>
                 <h3 className="text-xl font-black">Debt payoff planner</h3>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-sm font-bold text-muted">Payoff method</span>
+                    <select value={payoffMethod} onChange={(event) => setPayoffMethod(event.target.value as "snowball" | "avalanche")} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
+                      <option value="avalanche">Avalanche</option>
+                      <option value="snowball">Snowball</option>
+                    </select>
+                  </label>
+                  <MiniStat label="APR" value={`${focusedCard.apr ?? (focusedCard.type === "credit" ? 24.9 : 39.9)}%`} />
+                </div>
                 <input type="range" min="50" max="1500" step="25" value={debtPayment} onChange={(event) => setDebtPayment(Number(event.target.value))} className="mt-4 w-full accent-[var(--accent)]" />
-                <p className="mt-2 text-sm font-bold text-muted">Monthly payment: {currency.format(debtPayment)}</p>
+                <p className="mt-2 text-sm font-bold text-muted">
+                  Monthly payment: {currency.format(debtPayment)}. {payoffMethod === "avalanche" ? "Prioritise highest APR first." : "Prioritise the smallest balance first."}
+                </p>
                 {calculateDebtPayoff([focusedCard], debtPayment).map((plan) => (
                   <div key={plan.cardId} className="mt-4 grid gap-3 sm:grid-cols-3">
                     <MiniStat label="Debt" value={currency.format(plan.startingDebt)} />
@@ -105,6 +119,7 @@ export function CardsManager() {
         <NumberField label="Balance" value={form.balance} onChange={(value) => setForm({ ...form, balance: value })} />
         <NumberField label="Credit limit" value={form.limit ?? 0} onChange={(value) => setForm({ ...form, limit: value || undefined })} />
         <NumberField label="Overdraft" value={form.overdraft ?? 0} onChange={(value) => setForm({ ...form, overdraft: value || undefined })} />
+        <NumberField label="APR %" value={form.apr ?? 0} onChange={(value) => setForm({ ...form, apr: value || undefined })} />
         <div className="flex gap-2">
           <button className="flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-foreground px-4 font-black text-background" type="submit">
             <Plus className="size-4" />

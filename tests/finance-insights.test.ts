@@ -3,9 +3,16 @@ import test from "node:test";
 import { cards, transactions } from "../src/lib/finance";
 import {
   buildCashFlowSeries,
+  buildBudgetAlerts,
+  calculateAffordability,
   calculateDebtPayoff,
+  calculateEmergencyBuffer,
+  calculatePaydayPlan,
   calculateSafeToSpendToday,
+  filterTransactions,
   findUpcomingRenewals,
+  planWishlistAffordability,
+  predictFutureBalance,
   suggestCategory,
 } from "../src/lib/finance-insights";
 
@@ -67,4 +74,58 @@ test("buildCashFlowSeries uses saved salary when income transactions are missing
   assert.equal(series[0].outgoings, 1000);
   assert.equal(series[0].net, 1500);
   assert.equal(series[1].income, 2500);
+});
+
+test("filterTransactions searches merchant, notes, card, category, amount and direction", () => {
+  const filtered = filterTransactions(
+    [
+      { id: "1", date: "2026-04-01", merchant: "Tesco", category: "Groceries", amount: -25, cardId: "card-a", notes: "weekly" },
+      { id: "2", date: "2026-04-02", merchant: "Payroll", category: "Income", amount: 2000, cardId: "card-b" },
+    ],
+    { query: "tes", category: "Groceries", cardId: "card-a", direction: "outgoing", minAmount: 20, maxAmount: 30 },
+  );
+
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].merchant, "Tesco");
+});
+
+test("predictFutureBalance and payday plan combine salary and recurring outgoings", () => {
+  const prediction = predictFutureBalance({
+    currentBalance: 1000,
+    monthlySalary: 2500,
+    recurring: [{ id: "r1", name: "Rent", amount: -700, category: "Rent", cardId: "c1", renewalDay: 10, warningDays: 7 }],
+    today: new Date("2026-04-01T00:00:00Z"),
+    paydayDay: 25,
+    buffer: 200,
+  });
+
+  assert.ok(prediction.balanceByPayday > 0);
+  assert.equal(prediction.bufferWarningDate, null);
+
+  const payday = calculatePaydayPlan({
+    currentBalance: 1000,
+    monthlySalary: 2500,
+    transactions: [],
+    recurring: prediction.upcomingRecurring,
+    today: new Date("2026-04-01T00:00:00Z"),
+    paydayDay: 25,
+    buffer: 200,
+  });
+  assert.equal(payday.daysUntilPayday, 24);
+});
+
+test("affordability, emergency buffer, alerts, and wishlist plans return actionable values", () => {
+  const affordability = calculateAffordability({ itemCost: 250, safeToday: 50, discretionaryRemaining: 500, savingsTarget: 300 });
+  assert.equal(affordability.affordable, true);
+  assert.equal(affordability.dailySpendAfterPurchase, 25);
+
+  const buffer = calculateEmergencyBuffer({ targetMonths: 1, transactions: [{ id: "1", date: "2026-04-01", merchant: "Rent", category: "Rent", amount: -1000, cardId: "c1" }], savedAmount: 250 });
+  assert.equal(buffer.target, 1000);
+  assert.equal(buffer.progress, 25);
+
+  const alerts = buildBudgetAlerts([{ id: "b1", category: "Eating out", monthlyLimit: 100 }], [{ id: "1", date: "2026-04-01", merchant: "Cafe", category: "Eating out", amount: -85, cardId: "c1" }], []);
+  assert.equal(alerts[0].type, "budget");
+
+  const wishlist = planWishlistAffordability([{ id: "w1", name: "Ticket", price: 250, saved: 50, priority: "High" }], 100);
+  assert.equal(wishlist[0].monthsUntilAffordable, 2);
 });

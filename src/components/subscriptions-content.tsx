@@ -3,7 +3,7 @@
 import { BellRing, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
-import { categories, type Category } from "@/lib/finance";
+import type { Category } from "@/lib/finance";
 import { findUpcomingRenewals, type Subscription } from "@/lib/finance-insights";
 import { createId, useFinance } from "@/lib/finance-store";
 import { preciseCurrency } from "@/lib/utils";
@@ -16,10 +16,12 @@ const blankSubscription: Subscription = {
   cardId: "",
   renewalDay: 1,
   warningDays: 7,
+  repeatPattern: "monthly",
+  startDate: new Date().toISOString().slice(0, 10),
 };
 
 export function SubscriptionsContent() {
-  const { cards, subscriptions, saveSubscription, deleteSubscription } = useFinance();
+  const { cards, subscriptions, categoryOptions, saveSubscription, deleteSubscription } = useFinance();
   const [form, setForm] = useState<Subscription>(blankSubscription);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const upcoming = findUpcomingRenewals(subscriptions);
@@ -57,11 +59,21 @@ export function SubscriptionsContent() {
           <label className="block">
             <span className="text-sm font-bold text-muted">Category</span>
             <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as Category })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              {categories.filter((category) => category !== "Income").map((category) => (
+              {categoryOptions.filter((category) => category !== "Income").map((category) => (
                 <option key={category}>{category}</option>
               ))}
             </select>
           </label>
+          <label className="block">
+            <span className="text-sm font-bold text-muted">Repeat pattern</span>
+            <select value={form.repeatPattern ?? "monthly"} onChange={(event) => setForm({ ...form, repeatPattern: event.target.value as Subscription["repeatPattern"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="four-weekly">Every 4 weeks</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <Field label="Start date" type="date" value={form.startDate ?? ""} onChange={(value) => setForm({ ...form, startDate: value })} />
           <label className="block">
             <span className="text-sm font-bold text-muted">Payment card</span>
             <select value={form.cardId} onChange={(event) => setForm({ ...form, cardId: event.target.value })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
@@ -115,7 +127,7 @@ export function SubscriptionsContent() {
               </div>
               <p className="mt-4 text-xl font-black">{preciseCurrency.format(item.amount)}</p>
               <p className="mt-2 text-sm text-muted">
-                Paid from {cards.find((card) => card.id === item.cardId)?.name ?? "Unknown card"} on day {item.renewalDay}. Warning starts {item.warningDays} days before renewal.
+                Paid from {cards.find((card) => card.id === item.cardId)?.name ?? "Unknown card"} on day {item.renewalDay}. Repeats {repeatLabel(item.repeatPattern)}. Warning starts {item.warningDays} days before renewal.
               </p>
             </article>
           ))}
@@ -125,11 +137,11 @@ export function SubscriptionsContent() {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
   return (
     <label className="block">
       <span className="text-sm font-bold text-muted">{label}</span>
-      <input required value={value} onChange={(event) => onChange(event.target.value)} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
+      <input required type={type} value={value} onChange={(event) => onChange(event.target.value)} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
     </label>
   );
 }
@@ -141,4 +153,13 @@ function NumberField({ label, value, onChange, min, max }: { label: string; valu
       <input required type="number" step="0.01" min={min} max={max} value={value} onChange={(event) => onChange(Number(event.target.value))} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
     </label>
   );
+}
+
+function repeatLabel(pattern: Subscription["repeatPattern"] = "monthly") {
+  return {
+    weekly: "weekly",
+    monthly: "monthly",
+    "four-weekly": "every 4 weeks",
+    custom: "on a custom rhythm",
+  }[pattern];
 }

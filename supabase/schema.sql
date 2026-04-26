@@ -55,6 +55,7 @@ create table public.cards (
   balance numeric(12, 2) not null default 0,
   credit_limit numeric(12, 2),
   overdraft_limit numeric(12, 2),
+  apr numeric(7, 4),
   colour text not null default '#0f766e',
   created_at timestamptz not null default now()
 );
@@ -125,6 +126,8 @@ create table public.subscriptions (
   amount numeric(12, 2) not null,
   renewal_day int not null check (renewal_day between 1 and 31),
   warning_days int not null default 7,
+  repeat_pattern text not null default 'monthly' check (repeat_pattern in ('weekly', 'monthly', 'four-weekly', 'custom')),
+  start_date date,
   active boolean not null default true,
   created_at timestamptz not null default now()
 );

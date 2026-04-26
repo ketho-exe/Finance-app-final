@@ -3,7 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
-import { categories, type Category } from "@/lib/finance";
+import type { Category } from "@/lib/finance";
 import { calculateBudgetUsage, type Budget } from "@/lib/finance-insights";
 import { createId, useFinance } from "@/lib/finance-store";
 import { currency, percent } from "@/lib/utils";
@@ -15,7 +15,7 @@ const blankBudget: Budget = {
 };
 
 export function BudgetsContent() {
-  const { budgets, transactions, saveBudget, deleteBudget } = useFinance();
+  const { budgets, transactions, categoryOptions, saveBudget, deleteBudget } = useFinance();
   const [form, setForm] = useState<Budget>(blankBudget);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const usage = calculateBudgetUsage(budgets, transactions);
@@ -50,7 +50,7 @@ export function BudgetsContent() {
           <label className="block">
             <span className="text-sm font-bold text-muted">Category</span>
             <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as Category })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              {categories.filter((category) => category !== "Income").map((category) => (
+              {categoryOptions.filter((category) => category !== "Income").map((category) => (
                 <option key={category}>{category}</option>
               ))}
             </select>
