@@ -121,6 +121,8 @@ export function salaryFromRow(row: Record<string, unknown>): SalarySettings {
     gross: numberValue(row.gross_annual),
     pension: numberValue(row.pension_percent),
     studentLoan: row.student_loan_plan as SalarySettings["studentLoan"],
+    paydayDay: numberValue(row.payday_day ?? 25),
+    incomeCardId: row.income_card_id ? String(row.income_card_id) : undefined,
   };
 }
 
@@ -130,6 +132,8 @@ export function salaryToRow(salary: SalarySettings, userId: string) {
     gross_annual: salary.gross,
     pension_percent: salary.pension,
     student_loan_plan: salary.studentLoan,
+    payday_day: salary.paydayDay,
+    income_card_id: rowId(salary.incomeCardId ?? "") ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -139,6 +143,9 @@ export function budgetFromRow(row: Record<string, unknown>): Budget {
     id: String(row.id),
     category: row.category as Category,
     monthlyLimit: numberValue(row.monthly_limit),
+    commitment: (row.commitment_type as Budget["commitment"]) ?? "flexible",
+    dueDay: nullableNumber(row.due_day),
+    cardId: row.card_id ? String(row.card_id) : undefined,
   };
 }
 
@@ -148,6 +155,9 @@ export function budgetToRow(budget: Budget, userId: string) {
     user_id: userId,
     category: budget.category,
     monthly_limit: budget.monthlyLimit,
+    commitment_type: budget.commitment ?? "flexible",
+    due_day: budget.dueDay ?? null,
+    card_id: rowId(budget.cardId ?? "") ?? null,
   };
 }
 

@@ -15,7 +15,7 @@ const blankBudget: Budget = {
 };
 
 export function BudgetsContent() {
-  const { budgets, transactions, categoryOptions, saveBudget, deleteBudget } = useFinance();
+  const { budgets, transactions, cards, categoryOptions, saveBudget, deleteBudget } = useFinance();
   const [form, setForm] = useState<Budget>(blankBudget);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const usage = calculateBudgetUsage(budgets, transactions);
@@ -59,6 +59,31 @@ export function BudgetsContent() {
             <span className="text-sm font-bold text-muted">Monthly limit</span>
             <input type="number" step="0.01" value={form.monthlyLimit} onChange={(event) => setForm({ ...form, monthlyLimit: Number(event.target.value) })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
           </label>
+          <label className="block">
+            <span className="text-sm font-bold text-muted">Budget behaviour</span>
+            <select value={form.commitment ?? "flexible"} onChange={(event) => setForm({ ...form, commitment: event.target.value as Budget["commitment"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
+              <option value="flexible">Flexible spending limit</option>
+              <option value="bill">Non-negotiable outgoing</option>
+              <option value="reserve">Keep in account</option>
+            </select>
+          </label>
+          {form.commitment === "bill" ? (
+            <>
+              <label className="block">
+                <span className="text-sm font-bold text-muted">Due day</span>
+                <input type="number" min="1" max="31" value={form.dueDay ?? 1} onChange={(event) => setForm({ ...form, dueDay: Number(event.target.value) })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-muted">Paid from</span>
+                <select value={form.cardId ?? ""} onChange={(event) => setForm({ ...form, cardId: event.target.value || undefined })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
+                  <option value="">Any current balance</option>
+                  {cards.map((card) => (
+                    <option key={card.id} value={card.id}>{card.name}</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : null}
           <button className="h-11 w-full rounded-md bg-foreground px-4 font-black text-background">Save budget</button>
         </form>
       </GlideOverlay>
@@ -87,7 +112,10 @@ export function BudgetsContent() {
               <span>{currency.format(budget.spent)} spent</span>
               <span>{currency.format(budget.monthlyLimit)} limit</span>
             </div>
-            <p className="mt-2 text-sm text-muted">{budget.overLimit ? "Over budget. Future safe-spend is reduced." : `${currency.format(budget.remaining)} remaining this month.`}</p>
+            <p className="mt-2 text-sm text-muted">
+              {budget.overLimit ? "Over budget. Future safe-spend is reduced." : `${currency.format(budget.remaining)} remaining this month.`}
+            </p>
+            <p className="mt-2 text-xs font-black uppercase tracking-normal text-muted">{budgetLabel(budget)}</p>
           </article>
         ))}
         {usage.length === 0 ? (
@@ -99,4 +127,10 @@ export function BudgetsContent() {
       </div>
     </>
   );
+}
+
+function budgetLabel(budget: Budget) {
+  if (budget.commitment === "bill") return `Non-negotiable outgoing on day ${budget.dueDay ?? 1}`;
+  if (budget.commitment === "reserve") return "Held back from safe-to-spend";
+  return "Flexible limit";
 }

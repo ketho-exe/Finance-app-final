@@ -38,6 +38,8 @@ export type SalarySettings = {
   gross: number;
   pension: number;
   studentLoan: "none" | "plan1" | "plan2" | "plan5";
+  paydayDay: number;
+  incomeCardId?: string;
 };
 
 export type CustomCategory = {
@@ -100,6 +102,8 @@ const defaultSalary: SalarySettings = {
   gross: 52000,
   pension: 5,
   studentLoan: "plan2",
+  paydayDay: 25,
+  incomeCardId: undefined,
 };
 
 const FinanceContext = createContext<FinanceState | null>(null);

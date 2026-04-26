@@ -16,6 +16,9 @@ export type Budget = {
   id: string;
   category: Category;
   monthlyLimit: number;
+  commitment?: "flexible" | "bill" | "reserve";
+  dueDay?: number;
+  cardId?: string;
 };
 
 export type HouseholdMember = {
@@ -180,6 +183,96 @@ function nextOccurrence(day: number, today: Date) {
 
 function daysBetween(a: Date, b: Date) {
   return Math.ceil((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+function monthEnd(today: Date) {
+  return new Date(today.getFullYear(), today.getMonth() + 1, 0);
+}
+
+export function buildMonthEndForecast({
+  currentBalance,
+  monthlyTakeHome,
+  paydayDay,
+  today = new Date(),
+  subscriptions,
+  budgets,
+}: {
+  currentBalance: number;
+  monthlyTakeHome: number;
+  paydayDay: number;
+  today?: Date;
+  subscriptions: Subscription[];
+  budgets: Budget[];
+}) {
+  const end = monthEnd(today);
+  const events: Array<{
+    id: string;
+    name: string;
+    date: string;
+    amount: number;
+    kind: "salary" | "subscription" | "budget-bill" | "reserve";
+  }> = [];
+
+  const payday = nextOccurrence(paydayDay, today);
+  if (payday <= end) {
+    events.push({
+      id: "salary",
+      name: "Salary",
+      date: payday.toISOString().slice(0, 10),
+      amount: monthlyTakeHome,
+      kind: "salary",
+    });
+  }
+
+  subscriptions.forEach((subscription) => {
+    const dueDate = nextOccurrence(subscription.renewalDay, today);
+    if (dueDate <= end) {
+      events.push({
+        id: subscription.id,
+        name: subscription.name,
+        date: dueDate.toISOString().slice(0, 10),
+        amount: -Math.abs(subscription.amount),
+        kind: "subscription",
+      });
+    }
+  });
+
+  budgets.filter((budget) => budget.commitment === "bill").forEach((budget) => {
+    const dueDate = nextOccurrence(budget.dueDay ?? 1, today);
+    if (dueDate <= end) {
+      events.push({
+        id: budget.id,
+        name: `${budget.category} reserve`,
+        date: dueDate.toISOString().slice(0, 10),
+        amount: -Math.abs(budget.monthlyLimit),
+        kind: "budget-bill",
+      });
+    }
+  });
+
+  const reservedAtMonthEnd = budgets
+    .filter((budget) => budget.commitment === "reserve")
+    .reduce((sum, budget) => sum + Math.abs(budget.monthlyLimit), 0);
+
+  budgets.filter((budget) => budget.commitment === "reserve").forEach((budget) => {
+    events.push({
+      id: budget.id,
+      name: `${budget.category} hold`,
+      date: end.toISOString().slice(0, 10),
+      amount: 0,
+      kind: "reserve",
+    });
+  });
+
+  events.sort((a, b) => a.date.localeCompare(b.date));
+  const projectedEndBalance = currentBalance + events.reduce((sum, event) => sum + event.amount, 0);
+
+  return {
+    events,
+    projectedEndBalance,
+    reservedAtMonthEnd,
+    availableAtMonthEnd: projectedEndBalance - reservedAtMonthEnd,
+  };
 }
 
 export function predictFutureBalance({

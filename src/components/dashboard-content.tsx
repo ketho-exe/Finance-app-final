@@ -5,8 +5,8 @@ import { useState } from "react";
 import { AlertTriangle, ArrowRight, CalendarDays, ShieldCheck, Target, TrendingUp, Wallet } from "lucide-react";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { StatCard } from "@/components/stat-card";
-import { categorySpend } from "@/lib/finance";
-import { buildBudgetAlerts, calculateAffordability, calculateEmergencyBuffer, calculatePaydayPlan, calculateSafeToSpendToday } from "@/lib/finance-insights";
+import { calculateUkSalary, categorySpend } from "@/lib/finance";
+import { buildBudgetAlerts, buildMonthEndForecast, calculateAffordability, calculateEmergencyBuffer, calculatePaydayPlan, calculateSafeToSpendToday } from "@/lib/finance-insights";
 import { useFinance } from "@/lib/finance-store";
 import { currency } from "@/lib/utils";
 
@@ -24,22 +24,33 @@ export function DashboardContent() {
   const savingsTarget = pots.reduce((sum, pot) => sum + pot.monthlyContribution, 0);
   const today = new Date();
   const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1;
+  const committedBudgetTotal = budgets
+    .filter((budget) => budget.commitment === "bill" || budget.commitment === "reserve")
+    .reduce((sum, budget) => sum + budget.monthlyLimit, 0);
   const safeSpend = calculateSafeToSpendToday({
     balance: currentBalance,
-    upcomingBills: subscriptions.reduce((sum, item) => sum + item.amount, 0),
+    upcomingBills: subscriptions.reduce((sum, item) => sum + item.amount, 0) + committedBudgetTotal,
     savingsTarget,
     daysLeftInMonth: daysLeft,
     buffer: 250,
   });
-  const monthlySalary = salary.gross / 12;
+  const monthlySalary = calculateUkSalary(salary.gross, salary.pension, salary.studentLoan).takeHomeMonthly;
   const payday = calculatePaydayPlan({
     currentBalance,
     monthlySalary,
     transactions,
     recurring: subscriptions,
     today,
-    paydayDay: 25,
+    paydayDay: salary.paydayDay,
     buffer: 250,
+  });
+  const monthEndForecast = buildMonthEndForecast({
+    currentBalance,
+    monthlyTakeHome: monthlySalary,
+    paydayDay: salary.paydayDay,
+    today,
+    subscriptions,
+    budgets,
   });
   const affordability = calculateAffordability({
     itemCost: affordCheck,
@@ -82,6 +93,7 @@ export function DashboardContent() {
             <p className="mt-4 text-3xl font-black">{payday.daysUntilPayday} days</p>
             <p className="mt-1 text-sm text-muted">Projected payday balance: {currency.format(payday.balanceByPayday)}</p>
             <p className="mt-3 text-sm font-bold">{currency.format(payday.safeDailySpend)} safe daily spend until payday.</p>
+            <p className="mt-1 text-sm text-muted">Payday income forecast uses {currency.format(monthlySalary)} take-home.</p>
             {payday.bufferWarningDate ? <p className="mt-2 text-sm font-bold text-danger">Buffer risk on {payday.bufferWarningDate}</p> : null}
           </div>
           <div className="surface p-5">
@@ -114,7 +126,7 @@ export function DashboardContent() {
           </div>
         </div>
       </section>
-      <section className="mt-6 grid gap-6 xl:grid-cols-3">
+      <section className="mt-6 grid gap-6 xl:grid-cols-4">
         <div className="surface p-5">
           <div className="flex items-center gap-3">
             <Target className="size-5 text-accent-2" />
@@ -128,6 +140,22 @@ export function DashboardContent() {
             {affordability.affordable ? "Fits current discretionary money" : "Would push past discretionary money"}
           </p>
           <p className="mt-1 text-sm text-muted">Daily spend after purchase: {currency.format(affordability.dailySpendAfterPurchase)}</p>
+        </div>
+        <div className="surface p-5">
+          <div className="flex items-center gap-3">
+            <Wallet className="size-5 text-accent" />
+            <h2 className="text-xl font-black">Month-end forecast</h2>
+          </div>
+          <p className="mt-4 text-3xl font-black">{currency.format(monthEndForecast.availableAtMonthEnd)}</p>
+          <p className="mt-1 text-sm text-muted">Available after salary, subscriptions, bill-like budgets, and held-back money.</p>
+          <div className="mt-4 space-y-2">
+            {monthEndForecast.events.slice(0, 4).map((event) => (
+              <div key={`${event.kind}-${event.id}`} className="flex justify-between gap-3 rounded-md bg-soft px-3 py-2 text-sm font-bold">
+                <span>{event.name}</span>
+                <span className={event.amount < 0 ? "text-danger" : "text-accent"}>{currency.format(event.amount)}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="surface p-5">
           <div className="flex items-center gap-3">

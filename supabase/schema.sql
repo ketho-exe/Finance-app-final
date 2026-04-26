@@ -109,9 +109,11 @@ create table public.wishlist_items (
 
 create table public.salary_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  income_card_id uuid references public.cards(id) on delete set null,
   gross_annual numeric(12, 2) not null default 52000,
   pension_percent numeric(5, 2) not null default 5,
   student_loan_plan text not null default 'plan2' check (student_loan_plan in ('none', 'plan1', 'plan2', 'plan5')),
+  payday_day int not null default 25 check (payday_day between 1 and 31),
   updated_at timestamptz not null default now()
 );
 
@@ -137,8 +139,11 @@ create table public.budgets (
   user_id uuid not null references auth.users(id) on delete cascade,
   household_id uuid references public.households(id) on delete set null,
   category_id uuid references public.categories(id) on delete cascade,
+  card_id uuid references public.cards(id) on delete set null,
   category text not null default 'Shopping',
   monthly_limit numeric(12, 2) not null,
+  commitment_type text not null default 'flexible' check (commitment_type in ('flexible', 'bill', 'reserve')),
+  due_day int check (due_day between 1 and 31),
   month_start date not null default date_trunc('month', now())::date,
   created_at timestamptz not null default now(),
   unique (user_id, category_id, month_start)

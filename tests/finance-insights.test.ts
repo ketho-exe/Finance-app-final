@@ -9,6 +9,7 @@ import {
   calculateEmergencyBuffer,
   calculatePaydayPlan,
   calculateSafeToSpendToday,
+  buildMonthEndForecast,
   filterTransactions,
   findUpcomingRenewals,
   planWishlistAffordability,
@@ -28,6 +29,25 @@ test("findUpcomingRenewals returns bills due within the warning window", () => {
   assert.equal(renewals.length, 1);
   assert.equal(renewals[0].name, "Netflix");
   assert.equal(renewals[0].daysUntilRenewal, 3);
+});
+
+test("month-end forecast includes take-home salary, recurring bills, and committed budgets", () => {
+  const forecast = buildMonthEndForecast({
+    currentBalance: 1000,
+    monthlyTakeHome: 2500,
+    paydayDay: 25,
+    today: new Date("2026-04-20T00:00:00Z"),
+    subscriptions: [{ id: "s1", name: "Phone", amount: 30, category: "Bills", cardId: "c1", renewalDay: 27, warningDays: 7 }],
+    budgets: [
+      { id: "b1", category: "Rent", monthlyLimit: 900, commitment: "bill", dueDay: 28 },
+      { id: "b2", category: "Transport", monthlyLimit: 160, commitment: "reserve" },
+    ],
+  });
+
+  assert.deepEqual(forecast.events.map((event) => event.name), ["Salary", "Phone", "Rent reserve", "Transport hold"]);
+  assert.equal(forecast.projectedEndBalance, 2570);
+  assert.equal(forecast.reservedAtMonthEnd, 160);
+  assert.equal(forecast.availableAtMonthEnd, 2410);
 });
 
 test("calculateSafeToSpendToday reserves bills, budget buffer, and savings", () => {
