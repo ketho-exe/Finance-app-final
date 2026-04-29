@@ -15,6 +15,11 @@ import type { Transaction } from "@/lib/finance";
 import { buildCashFlowSeries } from "@/lib/finance-insights";
 import { currency } from "@/lib/utils";
 
+export const cashFlowChartInitialDimension = {
+  width: 720,
+  height: 320,
+};
+
 function CashFlowChartInner({
   transactions,
   monthlySalary,
@@ -26,7 +31,7 @@ function CashFlowChartInner({
 
   return (
     <div className="h-80 w-full">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={280} initialDimension={cashFlowChartInitialDimension}>
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="month" tickLine={false} axisLine={false} stroke="var(--muted)" />

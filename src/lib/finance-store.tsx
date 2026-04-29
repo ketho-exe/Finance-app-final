@@ -3,12 +3,16 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
+  cards as demoCards,
   type MoneyCard,
   type Pot,
+  pots as demoPots,
   type Transaction,
+  transactions as demoTransactions,
+  wishlist as demoWishlist,
   type WishlistItem,
 } from "@/lib/finance";
-import type { Budget, Subscription } from "@/lib/finance-insights";
+import { budgets as demoBudgets, subscriptions as demoSubscriptions, type Budget, type Subscription } from "@/lib/finance-insights";
 import { removeById, upsertById } from "@/lib/finance-store-actions";
 import {
   cardFromRow,
@@ -114,13 +118,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cards, setCards] = useState<MoneyCard[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [pots, setPots] = useState<Pot[]>([]);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [cards, setCards] = useState<MoneyCard[]>(() => (supabaseConfigured ? [] : demoCards.map((card) => ({ ...card }))));
+  const [transactions, setTransactions] = useState<Transaction[]>(() => (supabaseConfigured ? [] : demoTransactions.map((transaction) => ({ ...transaction }))));
+  const [pots, setPots] = useState<Pot[]>(() => (supabaseConfigured ? [] : demoPots.map((pot) => ({ ...pot }))));
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => (supabaseConfigured ? [] : demoWishlist.map((item) => ({ ...item }))));
   const [salary, setSalary] = useState<SalarySettings>(defaultSalary);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>(() => (supabaseConfigured ? [] : demoBudgets.map((budget) => ({ ...budget }))));
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => (supabaseConfigured ? [] : demoSubscriptions.map((subscription) => ({ ...subscription }))));
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [csvTemplates, setCsvTemplates] = useState<CsvTemplate[]>([]);
   const [reportExports, setReportExports] = useState<ReportExport[]>([]);

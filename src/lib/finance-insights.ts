@@ -73,18 +73,13 @@ export const csvTemplates = [
 ];
 
 export function findUpcomingRenewals(items: Subscription[], today = new Date()) {
+  const todayStart = startOfLocalDay(today);
+
   return items
     .map((item) => {
-      const renewal = new Date(today);
-      renewal.setHours(0, 0, 0, 0);
-      renewal.setDate(item.renewalDay);
-
-      if (renewal < today) {
-        renewal.setMonth(renewal.getMonth() + 1);
-      }
-
-      const daysUntilRenewal = Math.ceil((renewal.getTime() - today.getTime()) / 86_400_000);
-      return { ...item, renewalDate: renewal.toISOString().slice(0, 10), daysUntilRenewal };
+      const renewal = nextOccurrence(item.renewalDay, today);
+      const daysUntilRenewal = daysBetween(todayStart, renewal);
+      return { ...item, renewalDate: localDateKey(renewal), daysUntilRenewal };
     })
     .filter((item) => item.daysUntilRenewal <= item.warningDays)
     .sort((a, b) => a.daysUntilRenewal - b.daysUntilRenewal);
@@ -176,13 +171,34 @@ export function filterTransactions(transactions: Transaction[], filters: Transac
 }
 
 function nextOccurrence(day: number, today: Date) {
-  const date = new Date(today.getFullYear(), today.getMonth(), Math.min(day, 28));
-  if (date < today) date.setMonth(date.getMonth() + 1);
+  const todayStart = startOfLocalDay(today);
+  let date = dateInMonth(today.getFullYear(), today.getMonth(), day);
+
+  if (date < todayStart) {
+    date = dateInMonth(today.getFullYear(), today.getMonth() + 1, day);
+  }
+
   return date;
 }
 
 function daysBetween(a: Date, b: Date) {
   return Math.ceil((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function dateInMonth(year: number, month: number, day: number) {
+  const monthEndDate = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(Math.max(1, day), monthEndDate));
+}
+
+function localDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function monthEnd(today: Date) {
@@ -218,7 +234,7 @@ export function buildMonthEndForecast({
     events.push({
       id: "salary",
       name: "Salary",
-      date: payday.toISOString().slice(0, 10),
+      date: localDateKey(payday),
       amount: monthlyTakeHome,
       kind: "salary",
     });
@@ -230,7 +246,7 @@ export function buildMonthEndForecast({
       events.push({
         id: subscription.id,
         name: subscription.name,
-        date: dueDate.toISOString().slice(0, 10),
+        date: localDateKey(dueDate),
         amount: -Math.abs(subscription.amount),
         kind: "subscription",
       });
@@ -243,7 +259,7 @@ export function buildMonthEndForecast({
       events.push({
         id: budget.id,
         name: `${budget.category} reserve`,
-        date: dueDate.toISOString().slice(0, 10),
+        date: localDateKey(dueDate),
         amount: -Math.abs(budget.monthlyLimit),
         kind: "budget-bill",
       });
@@ -258,7 +274,7 @@ export function buildMonthEndForecast({
     events.push({
       id: budget.id,
       name: `${budget.category} hold`,
-      date: end.toISOString().slice(0, 10),
+      date: localDateKey(end),
       amount: 0,
       kind: "reserve",
     });
@@ -303,13 +319,13 @@ export function predictFutureBalance({
     .forEach((item) => {
       runningBalance -= Math.abs(item.amount);
       if (runningBalance < buffer && !bufferWarningDate) {
-        bufferWarningDate = item.nextDate.toISOString().slice(0, 10);
+        bufferWarningDate = localDateKey(item.nextDate);
       }
     });
 
   return {
-    paydayDate: payday.toISOString().slice(0, 10),
-    daysUntilPayday: Math.max(0, daysBetween(today, payday)),
+    paydayDate: localDateKey(payday),
+    daysUntilPayday: Math.max(0, daysBetween(startOfLocalDay(today), payday)),
     balanceByPayday: runningBalance + monthlySalary,
     bufferWarningDate,
     upcomingRecurring,

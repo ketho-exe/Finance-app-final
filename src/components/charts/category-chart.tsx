@@ -7,6 +7,11 @@ import { currency } from "@/lib/utils";
 
 const colours = ["#0f766e", "#2457c5", "#b45309", "#7c3aed", "#be123c", "#15803d", "#0369a1", "#a16207"];
 
+export const categoryChartInitialDimension = {
+  width: 480,
+  height: 288,
+};
+
 function CategoryChartInner({ transactions }: { transactions?: Transaction[] }) {
   const data = Object.entries(categorySpend(transactions))
     .map(([name, value]) => ({ name, value }))
@@ -15,7 +20,7 @@ function CategoryChartInner({ transactions }: { transactions?: Transaction[] }) 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_220px]">
       <div className="h-72 min-w-0">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={260} initialDimension={categoryChartInitialDimension}>
           <PieChart>
             <Pie data={data} innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value">
               {data.map((entry, index) => (

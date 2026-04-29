@@ -11,6 +11,7 @@ const authConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.e
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { session, loading } = useFinance();
 
+  if (!authConfigured) return <>{children}</>;
   if (session) return <>{children}</>;
 
   return <LoginScreen loadingSession={loading} />;

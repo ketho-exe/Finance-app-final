@@ -31,6 +31,27 @@ test("findUpcomingRenewals returns bills due within the warning window", () => {
   assert.equal(renewals[0].daysUntilRenewal, 3);
 });
 
+test("findUpcomingRenewals includes renewals due later today", () => {
+  const renewals = findUpcomingRenewals(
+    [{ id: "s1", name: "Broadband", amount: 32, category: "Bills", cardId: "monzo", renewalDay: 28, warningDays: 7 }],
+    new Date("2026-04-28T15:30:00"),
+  );
+
+  assert.equal(renewals.length, 1);
+  assert.equal(renewals[0].renewalDate, "2026-04-28");
+  assert.equal(renewals[0].daysUntilRenewal, 0);
+});
+
+test("findUpcomingRenewals uses the real month end for day 31 renewals", () => {
+  const renewals = findUpcomingRenewals(
+    [{ id: "s1", name: "Mortgage", amount: 1250, category: "Bills", cardId: "chase", renewalDay: 31, warningDays: 40 }],
+    new Date("2026-05-01T09:00:00"),
+  );
+
+  assert.equal(renewals[0].renewalDate, "2026-05-31");
+  assert.equal(renewals[0].daysUntilRenewal, 30);
+});
+
 test("month-end forecast includes take-home salary, recurring bills, and committed budgets", () => {
   const forecast = buildMonthEndForecast({
     currentBalance: 1000,
@@ -48,6 +69,20 @@ test("month-end forecast includes take-home salary, recurring bills, and committ
   assert.equal(forecast.projectedEndBalance, 2570);
   assert.equal(forecast.reservedAtMonthEnd, 160);
   assert.equal(forecast.availableAtMonthEnd, 2410);
+});
+
+test("month-end forecast includes payday when it is today", () => {
+  const forecast = buildMonthEndForecast({
+    currentBalance: 1000,
+    monthlyTakeHome: 2500,
+    paydayDay: 25,
+    today: new Date("2026-04-25T12:00:00"),
+    subscriptions: [],
+    budgets: [],
+  });
+
+  assert.deepEqual(forecast.events.map((event) => event.name), ["Salary"]);
+  assert.equal(forecast.projectedEndBalance, 3500);
 });
 
 test("calculateSafeToSpendToday reserves bills, budget buffer, and savings", () => {

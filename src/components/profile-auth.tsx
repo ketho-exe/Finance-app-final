@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { useFinance } from "@/lib/finance-store";
 
+const authConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
 type Profile = {
   display_name: string | null;
   currency: string;
@@ -12,13 +14,13 @@ type Profile = {
 
 export function ProfileAuth() {
   const { session } = useFinance();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => (authConfigured ? createClient() : null), []);
   const [profile, setProfile] = useState<Profile>({ display_name: "", currency: "GBP" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!session?.user.id) return;
+    if (!supabase || !session?.user.id) return;
 
     let active = true;
     supabase
@@ -37,7 +39,7 @@ export function ProfileAuth() {
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
-    if (!session?.user.id) return;
+    if (!supabase || !session?.user.id) return;
     setLoading(true);
     setMessage("");
     const { error } = await supabase.from("profiles").upsert({
@@ -53,6 +55,15 @@ export function ProfileAuth() {
     if (!supabase) return;
     await supabase.auth.signOut();
     setProfile({ display_name: "", currency: "GBP" });
+  }
+
+  if (!authConfigured) {
+    return (
+      <section className="surface p-5">
+        <h2 className="text-xl font-black">Local mode</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">Supabase auth is not configured, so this workspace is running with the bundled demo data.</p>
+      </section>
+    );
   }
 
   if (!session) return null;
