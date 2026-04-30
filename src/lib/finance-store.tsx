@@ -3,17 +3,13 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  cards as demoCards,
   type MoneyCard,
   type Pot,
-  pots as demoPots,
   type Transaction,
-  transactions as demoTransactions,
-  wishlist as demoWishlist,
   type WishlistItem,
 } from "@/lib/finance";
-import { budgets as demoBudgets, subscriptions as demoSubscriptions, type Budget, type Subscription } from "@/lib/finance-insights";
-import { removeById, upsertById } from "@/lib/finance-store-actions";
+import { type Budget, type Subscription } from "@/lib/finance-insights";
+import { deriveCardBalances, hydrateLocalSnapshot, removeById, toLocalSnapshot, upsertById } from "@/lib/finance-store-actions";
 import {
   cardFromRow,
   cardToRow,
@@ -112,24 +108,48 @@ const defaultSalary: SalarySettings = {
 
 const FinanceContext = createContext<FinanceState | null>(null);
 const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const localStorageKey = "ledgerly.finance.v1";
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState<SupabaseClient | null>(() => (supabaseConfigured ? createClient() : null));
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cards, setCards] = useState<MoneyCard[]>(() => (supabaseConfigured ? [] : demoCards.map((card) => ({ ...card }))));
-  const [transactions, setTransactions] = useState<Transaction[]>(() => (supabaseConfigured ? [] : demoTransactions.map((transaction) => ({ ...transaction }))));
-  const [pots, setPots] = useState<Pot[]>(() => (supabaseConfigured ? [] : demoPots.map((pot) => ({ ...pot }))));
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => (supabaseConfigured ? [] : demoWishlist.map((item) => ({ ...item }))));
+  const [localReady, setLocalReady] = useState(supabaseConfigured);
+  const [cards, setCards] = useState<MoneyCard[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pots, setPots] = useState<Pot[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [salary, setSalary] = useState<SalarySettings>(defaultSalary);
-  const [budgets, setBudgets] = useState<Budget[]>(() => (supabaseConfigured ? [] : demoBudgets.map((budget) => ({ ...budget }))));
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => (supabaseConfigured ? [] : demoSubscriptions.map((subscription) => ({ ...subscription }))));
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [csvTemplates, setCsvTemplates] = useState<CsvTemplate[]>([]);
   const [reportExports, setReportExports] = useState<ReportExport[]>([]);
   const userId = session?.user.id;
   const usingSupabase = Boolean(supabase && userId);
+  const balancedCards = useMemo(() => deriveCardBalances(cards, transactions), [cards, transactions]);
+
+  useEffect(() => {
+    if (supabaseConfigured || typeof window === "undefined") return;
+
+    queueMicrotask(() => {
+      const snapshot = hydrateLocalSnapshot(window.localStorage.getItem(localStorageKey));
+      if (snapshot) {
+        setCards(snapshot.cards);
+        setTransactions(snapshot.transactions);
+        setPots(snapshot.pots);
+        setWishlist(snapshot.wishlist);
+        setSalary(snapshot.salary);
+        setBudgets(snapshot.budgets);
+        setSubscriptions(snapshot.subscriptions);
+        setCustomCategories(snapshot.customCategories);
+        setCsvTemplates(snapshot.csvTemplates);
+        setReportExports(snapshot.reportExports);
+      }
+      setLocalReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -219,48 +239,67 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("cards").upsert(cardToRow(card, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setCards((items) => upsertById(items, cardFromRow(data)));
+    if (data) {
+      setError("");
+      setCards((items) => upsertById(items, cardFromRow(data)));
+    }
   }, [setCards, supabase, userId]);
 
   const persistTransaction = useCallback(async (transaction: Transaction) => {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("transactions").upsert(transactionToRow(transaction, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setTransactions((items) => upsertById(items, transactionFromRow(data)));
+    if (data) {
+      setError("");
+      setTransactions((items) => upsertById(items, transactionFromRow(data)));
+    }
   }, [setTransactions, supabase, userId]);
 
   const persistPot = useCallback(async (pot: Pot) => {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("pots").upsert(potToRow(pot, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setPots((items) => upsertById(items, potFromRow(data)));
+    if (data) {
+      setError("");
+      setPots((items) => upsertById(items, potFromRow(data)));
+    }
   }, [setPots, supabase, userId]);
 
   const persistWishlistItem = useCallback(async (item: WishlistItem) => {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("wishlist_items").upsert(wishlistToRow(item, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setWishlist((items) => upsertById(items, wishlistFromRow(data)));
+    if (data) {
+      setError("");
+      setWishlist((items) => upsertById(items, wishlistFromRow(data)));
+    }
   }, [setWishlist, supabase, userId]);
 
   const persistSalary = useCallback(async (settings: SalarySettings) => {
     if (!supabase || !userId) return;
     const { error: saveError } = await supabase.from("salary_settings").upsert(salaryToRow(settings, userId));
     if (saveError) setError(saveError.message);
+    else setError("");
   }, [supabase, userId]);
 
   const persistBudget = useCallback(async (budget: Budget) => {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("budgets").upsert(budgetToRow(budget, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setBudgets((items) => upsertById(items, budgetFromRow(data)));
+    if (data) {
+      setError("");
+      setBudgets((items) => upsertById(items, budgetFromRow(data)));
+    }
   }, [setBudgets, supabase, userId]);
 
   const persistSubscription = useCallback(async (subscription: Subscription) => {
     if (!supabase || !userId) return;
     const { data, error: saveError } = await supabase.from("subscriptions").upsert(subscriptionToRow(subscription, userId)).select().single();
     if (saveError) setError(saveError.message);
-    if (data) setSubscriptions((items) => upsertById(items, subscriptionFromRow(data)));
+    if (data) {
+      setError("");
+      setSubscriptions((items) => upsertById(items, subscriptionFromRow(data)));
+    }
   }, [setSubscriptions, supabase, userId]);
 
   const persistCustomCategory = useCallback(async (category: CustomCategory) => {
@@ -289,9 +328,40 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return Array.from(new Set([...defaults, ...customCategories.map((category) => category.name)])).sort((a, b) => a.localeCompare(b));
   }, [customCategories]);
 
+  const persistLocal = useCallback((overrides: Partial<Parameters<typeof toLocalSnapshot>[0]>) => {
+    if (supabaseConfigured || !localReady || typeof window === "undefined") return;
+    window.localStorage.setItem(
+      localStorageKey,
+      JSON.stringify(toLocalSnapshot({
+        cards,
+        transactions,
+        pots,
+        wishlist,
+        salary,
+        budgets,
+        subscriptions,
+        customCategories,
+        csvTemplates,
+        reportExports,
+        ...overrides,
+      })),
+    );
+  }, [budgets, cards, csvTemplates, customCategories, localReady, pots, reportExports, salary, subscriptions, transactions, wishlist]);
+
+  const deleteFromSupabase = useCallback(async (table: string, id: string) => {
+    if (!supabase || !userId) return true;
+    const { error: deleteError } = await supabase.from(table).delete().eq("id", id).eq("user_id", userId);
+    if (deleteError) {
+      setError(deleteError.message);
+      return false;
+    }
+    setError("");
+    return true;
+  }, [supabase, userId]);
+
   const value = useMemo<FinanceState>(
     () => ({
-      cards,
+      cards: balancedCards,
       transactions,
       pots,
       wishlist,
@@ -307,75 +377,117 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       saveCard: (card) => {
-        setCards((items) => upsertById(items, card));
+        const nextCards = upsertById(cards, card);
+        setCards(nextCards);
+        persistLocal({ cards: nextCards });
         void persistCard(card);
       },
-      deleteCard: (id) => {
-        setCards((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("cards").delete().eq("id", id).eq("user_id", userId);
+      deleteCard: async (id) => {
+        if (await deleteFromSupabase("cards", id)) {
+          const nextCards = removeById(cards, id);
+          const nextTransactions = transactions.filter((transaction) => transaction.cardId !== id);
+          setCards(nextCards);
+          setTransactions(nextTransactions);
+          persistLocal({ cards: nextCards, transactions: nextTransactions });
+        }
       },
       saveTransaction: (transaction) => {
-        setTransactions((items) => upsertById(items, transaction));
+        const nextTransactions = upsertById(transactions, transaction);
+        setTransactions(nextTransactions);
+        persistLocal({ transactions: nextTransactions });
         void persistTransaction(transaction);
       },
-      deleteTransaction: (id) => {
-        setTransactions((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("transactions").delete().eq("id", id).eq("user_id", userId);
+      deleteTransaction: async (id) => {
+        if (await deleteFromSupabase("transactions", id)) {
+          const nextTransactions = removeById(transactions, id);
+          setTransactions(nextTransactions);
+          persistLocal({ transactions: nextTransactions });
+        }
       },
       savePot: (pot) => {
-        setPots((items) => upsertById(items, pot));
+        const nextPots = upsertById(pots, pot);
+        setPots(nextPots);
+        persistLocal({ pots: nextPots });
         void persistPot(pot);
       },
-      deletePot: (id) => {
-        setPots((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("pots").delete().eq("id", id).eq("user_id", userId);
+      deletePot: async (id) => {
+        if (await deleteFromSupabase("pots", id)) {
+          const nextPots = removeById(pots, id);
+          setPots(nextPots);
+          persistLocal({ pots: nextPots });
+        }
       },
       saveWishlistItem: (item) => {
-        setWishlist((items) => upsertById(items, item));
+        const nextWishlist = upsertById(wishlist, item);
+        setWishlist(nextWishlist);
+        persistLocal({ wishlist: nextWishlist });
         void persistWishlistItem(item);
       },
-      deleteWishlistItem: (id) => {
-        setWishlist((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("wishlist_items").delete().eq("id", id).eq("user_id", userId);
+      deleteWishlistItem: async (id) => {
+        if (await deleteFromSupabase("wishlist_items", id)) {
+          const nextWishlist = removeById(wishlist, id);
+          setWishlist(nextWishlist);
+          persistLocal({ wishlist: nextWishlist });
+        }
       },
       setSalary: (settings) => {
         setSalary(settings);
+        persistLocal({ salary: settings });
         void persistSalary(settings);
       },
       saveBudget: (budget) => {
-        setBudgets((items) => upsertById(items, budget));
+        const nextBudgets = upsertById(budgets, budget);
+        setBudgets(nextBudgets);
+        persistLocal({ budgets: nextBudgets });
         void persistBudget(budget);
       },
-      deleteBudget: (id) => {
-        setBudgets((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("budgets").delete().eq("id", id).eq("user_id", userId);
+      deleteBudget: async (id) => {
+        if (await deleteFromSupabase("budgets", id)) {
+          const nextBudgets = removeById(budgets, id);
+          setBudgets(nextBudgets);
+          persistLocal({ budgets: nextBudgets });
+        }
       },
       saveSubscription: (subscription) => {
-        setSubscriptions((items) => upsertById(items, subscription));
+        const nextSubscriptions = upsertById(subscriptions, subscription);
+        setSubscriptions(nextSubscriptions);
+        persistLocal({ subscriptions: nextSubscriptions });
         void persistSubscription(subscription);
       },
-      deleteSubscription: (id) => {
-        setSubscriptions((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("subscriptions").delete().eq("id", id).eq("user_id", userId);
+      deleteSubscription: async (id) => {
+        if (await deleteFromSupabase("subscriptions", id)) {
+          const nextSubscriptions = removeById(subscriptions, id);
+          setSubscriptions(nextSubscriptions);
+          persistLocal({ subscriptions: nextSubscriptions });
+        }
       },
       saveCustomCategory: (category) => {
-        setCustomCategories((items) => upsertById(items, category));
+        const nextCustomCategories = upsertById(customCategories, category);
+        setCustomCategories(nextCustomCategories);
+        persistLocal({ customCategories: nextCustomCategories });
         void persistCustomCategory(category);
       },
-      deleteCustomCategory: (id) => {
-        setCustomCategories((items) => removeById(items, id));
-        if (supabase && userId) void supabase.from("categories").delete().eq("id", id).eq("user_id", userId);
+      deleteCustomCategory: async (id) => {
+        if (await deleteFromSupabase("categories", id)) {
+          const nextCustomCategories = removeById(customCategories, id);
+          setCustomCategories(nextCustomCategories);
+          persistLocal({ customCategories: nextCustomCategories });
+        }
       },
       saveCsvTemplate: (template) => {
-        setCsvTemplates((items) => upsertById(items, template));
+        const nextCsvTemplates = upsertById(csvTemplates, template);
+        setCsvTemplates(nextCsvTemplates);
+        persistLocal({ csvTemplates: nextCsvTemplates });
         void persistCsvTemplate(template);
       },
       saveReportExport: (report) => {
-        setReportExports((items) => upsertById(items, report));
+        const nextReportExports = upsertById(reportExports, report);
+        setReportExports(nextReportExports);
+        persistLocal({ reportExports: nextReportExports });
         void persistReportExport(report);
       },
     }),
-    [cards, transactions, pots, wishlist, salary, budgets, subscriptions, customCategories, categoryOptions, csvTemplates, reportExports, session, usingSupabase, loading, error, setCards, setTransactions, setPots, setWishlist, supabase, userId, setSalary, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem, persistBudget, persistSubscription, persistCustomCategory, persistCsvTemplate, persistReportExport],
+    [balancedCards, transactions, pots, wishlist, salary, budgets, subscriptions, customCategories, categoryOptions, csvTemplates, reportExports, session, usingSupabase, loading, error, cards, persistLocal, persistCard, persistPot, persistSalary, persistTransaction, persistWishlistItem, persistBudget, persistSubscription, persistCustomCategory, persistCsvTemplate, persistReportExport, deleteFromSupabase],
   );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

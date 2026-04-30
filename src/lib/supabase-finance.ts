@@ -132,8 +132,6 @@ export function salaryToRow(salary: SalarySettings, userId: string) {
     gross_annual: salary.gross,
     pension_percent: salary.pension,
     student_loan_plan: salary.studentLoan,
-    payday_day: salary.paydayDay,
-    income_card_id: rowId(salary.incomeCardId ?? "") ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -155,9 +153,6 @@ export function budgetToRow(budget: Budget, userId: string) {
     user_id: userId,
     category: budget.category,
     monthly_limit: budget.monthlyLimit,
-    commitment_type: budget.commitment ?? "flexible",
-    due_day: budget.dueDay ?? null,
-    card_id: rowId(budget.cardId ?? "") ?? null,
   };
 }
 

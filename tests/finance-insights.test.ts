@@ -5,10 +5,12 @@ import {
   buildCashFlowSeries,
   buildBudgetAlerts,
   calculateAffordability,
+  calculateBudgetUsage,
   calculateDebtPayoff,
   calculateEmergencyBuffer,
   calculatePaydayPlan,
   calculateSafeToSpendToday,
+  calculateMonthlySubscriptionTotal,
   buildMonthEndForecast,
   filterTransactions,
   findUpcomingRenewals,
@@ -96,6 +98,36 @@ test("calculateSafeToSpendToday reserves bills, budget buffer, and savings", () 
 
   assert.equal(result.safeToday, 50);
   assert.equal(result.discretionaryRemaining, 500);
+});
+
+test("calculateBudgetUsage handles empty, deleted, zero-limit, and multi-month data", () => {
+  const usage = calculateBudgetUsage(
+    [
+      { id: "b1", category: "Groceries", monthlyLimit: 100 },
+      { id: "b2", category: "Shopping", monthlyLimit: 0 },
+    ],
+    [
+      { id: "t1", date: "2026-04-10", merchant: "Tesco", category: "Groceries", amount: -30, cardId: "card-1" },
+      { id: "t2", date: "2026-03-10", merchant: "Tesco", category: "Groceries", amount: -70, cardId: "card-1" },
+      { id: "t3", date: "2026-04-12", merchant: "Refund", category: "Groceries", amount: 10, cardId: "card-1" },
+    ],
+    "2026-04",
+  );
+
+  assert.equal(usage[0].spent, 30);
+  assert.equal(usage[0].remaining, 70);
+  assert.equal(usage[0].progress, 30);
+  assert.equal(usage[1].progress, 0);
+});
+
+test("calculateMonthlySubscriptionTotal normalises repeat patterns", () => {
+  const total = calculateMonthlySubscriptionTotal([
+    { id: "s1", name: "Weekly", amount: 10, category: "Bills", cardId: "c1", renewalDay: 1, warningDays: 7, repeatPattern: "weekly" },
+    { id: "s2", name: "Four weekly", amount: 40, category: "Bills", cardId: "c1", renewalDay: 1, warningDays: 7, repeatPattern: "four-weekly" },
+    { id: "s3", name: "Monthly", amount: 25, category: "Bills", cardId: "c1", renewalDay: 1, warningDays: 7, repeatPattern: "monthly" },
+  ]);
+
+  assert.equal(total, 111.67);
 });
 
 test("suggestCategory recognises merchant keywords", () => {

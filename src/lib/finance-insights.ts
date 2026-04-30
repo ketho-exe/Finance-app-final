@@ -85,19 +85,25 @@ export function findUpcomingRenewals(items: Subscription[], today = new Date()) 
     .sort((a, b) => a.daysUntilRenewal - b.daysUntilRenewal);
 }
 
-export function calculateBudgetUsage(items: Budget[], transactions: Transaction[], monthPrefix = "2026-04") {
+export function calculateBudgetUsage(items: Budget[], transactions: Transaction[], monthPrefix = currentMonthKey()) {
   return items.map((budget) => {
     const spent = transactions
       .filter((transaction) => transaction.date.startsWith(monthPrefix) && transaction.category === budget.category && transaction.amount < 0)
       .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+    const progress = budget.monthlyLimit > 0 ? Math.min(100, (spent / budget.monthlyLimit) * 100) : 0;
     return {
       ...budget,
       spent,
       remaining: Math.max(0, budget.monthlyLimit - spent),
-      progress: Math.min(100, (spent / budget.monthlyLimit) * 100),
+      progress,
       overLimit: spent > budget.monthlyLimit,
     };
   });
+}
+
+export function calculateMonthlySubscriptionTotal(items: Subscription[]) {
+  const total = items.reduce((sum, item) => sum + normalisedMonthlyAmount(item), 0);
+  return Math.round(total * 100) / 100;
 }
 
 export function buildCashFlowSeries({
@@ -199,6 +205,24 @@ function localDateKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function currentMonthKey(today = new Date()) {
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function normalisedMonthlyAmount(subscription: Subscription) {
+  const amount = Math.abs(subscription.amount);
+  switch (subscription.repeatPattern ?? "monthly") {
+    case "weekly":
+      return (amount * 52) / 12;
+    case "four-weekly":
+      return (amount * 13) / 12;
+    case "monthly":
+    case "custom":
+    default:
+      return amount;
+  }
 }
 
 function monthEnd(today: Date) {

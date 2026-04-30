@@ -27,14 +27,27 @@ export function SalaryCalculator() {
         </label>
         <label className="block">
           <span className="text-sm font-bold text-muted">Pension contribution</span>
-          <input
-            type="range"
-            min="0"
-            max="20"
-            value={salary.pension}
-            onChange={(event) => updateSalary({ pension: Number(event.target.value) })}
-            className="mt-3 w-full accent-[var(--accent)]"
-          />
+          <div className="mt-3 grid grid-cols-[1fr_84px] items-center gap-3">
+            <input
+              aria-label="Pension contribution slider"
+              type="range"
+              min="0"
+              max="20"
+              value={salary.pension}
+              onChange={(event) => updateSalary({ pension: Number(event.target.value) })}
+              className="w-full accent-[var(--accent)]"
+            />
+            <input
+              aria-label="Pension contribution percent"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={salary.pension}
+              onChange={(event) => updateSalary({ pension: Number(event.target.value) })}
+              className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 font-black text-foreground"
+            />
+          </div>
           <span className="mt-1 block text-sm font-bold">{salary.pension}% saved automatically</span>
         </label>
         <label className="block">

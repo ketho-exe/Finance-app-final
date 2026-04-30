@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowUpRight, Mail, Moon, Sun } from "lucide-react";
+import Image from "next/image";
+import { Mail, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase-client";
@@ -63,9 +64,7 @@ function LoginScreen({ loadingSession }: { loadingSession: boolean }) {
     <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[1fr_520px]">
       <section className="hidden flex-col justify-between bg-foreground p-10 text-background lg:flex">
         <div className="flex items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-lg bg-background text-foreground">
-            <ArrowUpRight className="size-5" />
-          </span>
+          <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={48} height={48} className="size-12 rounded-lg object-contain" priority />
           <span className="text-2xl font-black">Ledgerly</span>
         </div>
         <div>
@@ -78,9 +77,7 @@ function LoginScreen({ loadingSession }: { loadingSession: boolean }) {
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center justify-between lg:hidden">
             <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-lg bg-foreground text-background">
-                <ArrowUpRight className="size-4" />
-              </span>
+              <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={40} height={40} className="size-10 rounded-lg object-contain" priority />
               <span className="text-xl font-black">Ledgerly</span>
             </div>
             <button type="button" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} className="grid size-10 place-items-center rounded-md border border-border">

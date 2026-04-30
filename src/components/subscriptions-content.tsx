@@ -4,7 +4,7 @@ import { BellRing, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
 import type { Category } from "@/lib/finance";
-import { findUpcomingRenewals, type Subscription } from "@/lib/finance-insights";
+import { calculateMonthlySubscriptionTotal, findUpcomingRenewals, type Subscription } from "@/lib/finance-insights";
 import { createId, useFinance } from "@/lib/finance-store";
 import { preciseCurrency } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export function SubscriptionsContent() {
   const [form, setForm] = useState<Subscription>(blankSubscription);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const upcoming = findUpcomingRenewals(subscriptions);
-  const monthlyTotal = subscriptions.reduce((sum, item) => sum + item.amount, 0);
+  const monthlyTotal = calculateMonthlySubscriptionTotal(subscriptions);
 
   function openAdd() {
     setForm({ ...blankSubscription, cardId: cards[0]?.id ?? "" });

@@ -6,30 +6,31 @@ import { AlertTriangle, ArrowRight, CalendarDays, ShieldCheck, Target, TrendingU
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { StatCard } from "@/components/stat-card";
 import { calculateUkSalary, categorySpend } from "@/lib/finance";
-import { buildBudgetAlerts, buildMonthEndForecast, calculateAffordability, calculateEmergencyBuffer, calculatePaydayPlan, calculateSafeToSpendToday } from "@/lib/finance-insights";
+import { buildBudgetAlerts, buildMonthEndForecast, calculateAffordability, calculateEmergencyBuffer, calculateMonthlySubscriptionTotal, calculatePaydayPlan, calculateSafeToSpendToday } from "@/lib/finance-insights";
 import { useFinance } from "@/lib/finance-store";
 import { currency } from "@/lib/utils";
 
 export function DashboardContent() {
   const { cards, pots, transactions, salary, budgets, subscriptions } = useFinance();
   const [affordCheck, setAffordCheck] = useState(250);
+  const today = new Date();
+  const monthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const monthLabel = today.toLocaleString("en-GB", { month: "long" });
+  const monthTransactions = transactions.filter((item) => item.date.startsWith(monthPrefix));
   const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
-  const monthlyIncome = transactions.filter((item) => item.category === "Income").slice(0, 1)[0]?.amount ?? 0;
-  const monthlySpend = transactions
-    .filter((item) => item.amount < 0 && item.date.startsWith("2026-04"))
-    .reduce((sum, item) => sum + Math.abs(item.amount), 0);
-  const topCategory = Object.entries(categorySpend(transactions)).sort((a, b) => b[1] - a[1])[0];
+  const monthlyIncome = monthTransactions.filter((item) => item.category === "Income").reduce((sum, item) => sum + item.amount, 0);
+  const monthlySpend = monthTransactions.filter((item) => item.amount < 0).reduce((sum, item) => sum + Math.abs(item.amount), 0);
+  const topCategory = Object.entries(categorySpend(monthTransactions)).sort((a, b) => b[1] - a[1])[0];
   const potProgress = pots.length ? pots.reduce((sum, pot) => sum + pot.current / pot.target, 0) / pots.length : 0;
   const currentBalance = cards.filter((card) => card.type === "current").reduce((sum, card) => sum + card.balance, 0);
   const savingsTarget = pots.reduce((sum, pot) => sum + pot.monthlyContribution, 0);
-  const today = new Date();
   const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1;
   const committedBudgetTotal = budgets
     .filter((budget) => budget.commitment === "bill" || budget.commitment === "reserve")
     .reduce((sum, budget) => sum + budget.monthlyLimit, 0);
   const safeSpend = calculateSafeToSpendToday({
     balance: currentBalance,
-    upcomingBills: subscriptions.reduce((sum, item) => sum + item.amount, 0) + committedBudgetTotal,
+    upcomingBills: calculateMonthlySubscriptionTotal(subscriptions) + committedBudgetTotal,
     savingsTarget,
     daysLeftInMonth: daysLeft,
     buffer: 250,
@@ -69,8 +70,8 @@ export function DashboardContent() {
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total balance" value={currency.format(totalBalance)} detail="Across current, credit, and savings cards" tone="good" />
-        <StatCard label="April income" value={currency.format(monthlyIncome)} detail="Latest payroll transaction" />
-        <StatCard label="April spending" value={currency.format(monthlySpend)} detail={`Highest category: ${topCategory?.[0] ?? "None"}`} tone="warn" />
+        <StatCard label={`${monthLabel} income`} value={currency.format(monthlyIncome)} detail="Income transactions this month" />
+        <StatCard label={`${monthLabel} spending`} value={currency.format(monthlySpend)} detail={`Highest category: ${topCategory?.[0] ?? "None"}`} tone="warn" />
         <StatCard label="Pot progress" value={`${Math.round(potProgress * 100)}%`} detail="Average progress toward active goals" />
       </section>
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">

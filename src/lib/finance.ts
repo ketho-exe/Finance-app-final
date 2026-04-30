@@ -147,7 +147,7 @@ export function calculateUkSalary(grossAnnual: number, pensionPercent: number, s
   };
 }
 
-export function categorySpend(items: Transaction[] = transactions) {
+export function categorySpend(items: Transaction[] = []) {
   return items
     .filter((transaction) => transaction.amount < 0)
     .reduce<Record<string, number>>((totals, transaction) => {
@@ -171,6 +171,6 @@ export function monthlyCashFlow() {
   });
 }
 
-export function cardTransactions(cardId: string, items: Transaction[] = transactions) {
+export function cardTransactions(cardId: string, items: Transaction[] = []) {
   return items.filter((transaction) => transaction.cardId === cardId);
 }

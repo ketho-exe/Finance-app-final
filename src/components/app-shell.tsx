@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -67,9 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-border bg-panel/92 px-4 py-5 backdrop-blur xl:flex xl:flex-col">
         <Link href="/" className="flex items-center gap-3 px-2">
-          <span className="grid size-11 place-items-center rounded-lg bg-foreground text-background">
-            <ArrowUpRight className="size-5" />
-          </span>
+          <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
           <span>
             <span className="block text-lg font-black">Ledgerly</span>
             <span className="text-sm text-muted">UK money control</span>
@@ -105,9 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
           <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2 xl:hidden">
-              <span className="grid size-9 place-items-center rounded-md bg-foreground text-background">
-                <ArrowUpRight className="size-4" />
-              </span>
+              <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={36} height={36} className="size-9 rounded-md object-contain" priority />
               <span className="font-black">Ledgerly</span>
             </Link>
             <nav className="hidden flex-1 items-center gap-1 overflow-x-auto lg:flex xl:hidden">
@@ -148,7 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="px-4 py-6 sm:px-6 lg:px-8">
-          {error ? <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-bold text-danger">Couldn’t save the latest change. Try again in a moment.</div> : null}
+          {error ? <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-bold text-danger">{error}</div> : null}
           {children}
         </main>
       </div>

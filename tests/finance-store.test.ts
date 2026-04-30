@@ -3,7 +3,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 
-test("FinanceProvider starts with demo data when Supabase is not configured", async () => {
+test("FinanceProvider starts empty when Supabase is not configured and no local data exists", async () => {
   const previousUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const previousKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,7 +18,7 @@ test("FinanceProvider starts with demo data when Supabase is not configured", as
 
   const html = renderToString(createElement(FinanceProvider, null, createElement(Probe)));
 
-  assert.match(html, />4:15:4:4:5:4</);
+  assert.match(html, />0:0:0:0:0:0</);
 
   if (previousUrl === undefined) {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;

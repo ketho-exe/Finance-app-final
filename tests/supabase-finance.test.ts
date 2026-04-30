@@ -76,7 +76,7 @@ test("maps pot, wishlist, and salary rows", () => {
   assert.equal(salary.paydayDay, 25);
   assert.equal(potToRow({ id: "p1", name: "Trip", kind: "goal", current: 10, target: 100, monthlyContribution: 5 }, "user-1").target_amount, 100);
   assert.equal(wishlistToRow({ id: "w1", name: "Chair", price: 300, saved: 20, priority: "High" }, "user-1").saved_amount, 20);
-  assert.equal(salaryToRow({ gross: 60000, pension: 6, studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1").payday_day, 25);
+  assert.deepEqual(Object.keys(salaryToRow({ gross: 60000, pension: 6, studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1")).sort(), ["gross_annual", "pension_percent", "student_loan_plan", "updated_at", "user_id"]);
 });
 
 test("maps budget and subscription rows", () => {
@@ -84,7 +84,7 @@ test("maps budget and subscription rows", () => {
   assert.equal(budget.monthlyLimit, 450);
   assert.equal(budget.commitment, "reserve");
   assert.equal(budgetToRow(budget, "user-1").category, "Groceries");
-  assert.equal(budgetToRow(budget, "user-1").commitment_type, "reserve");
+  assert.deepEqual(Object.keys(budgetToRow(budget, "user-1")).sort(), ["category", "id", "monthly_limit", "user_id"]);
 
   const subscription = subscriptionFromRow({
     id: "s1",
