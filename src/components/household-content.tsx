@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SelectField } from "@/components/select-field";
 import { householdMembers, type HouseholdMember } from "@/lib/finance-insights";
 import { currency } from "@/lib/utils";
 
@@ -38,11 +39,16 @@ export function HouseholdContent() {
           {members.map((member) => (
             <div key={member.id} className="grid gap-3 rounded-md bg-soft p-3 md:grid-cols-[1fr_150px_160px]">
               <input value={member.name} onChange={(event) => updateMember(member.id, { name: event.target.value })} className="rounded-md border border-border bg-background px-3 py-2 font-bold" />
-              <select value={member.role} onChange={(event) => updateMember(member.id, { role: event.target.value as HouseholdMember["role"] })} className="rounded-md border border-border bg-background px-3 py-2 font-bold">
-                <option>Owner</option>
-                <option>Partner</option>
-                <option>Viewer</option>
-              </select>
+              <SelectField
+                value={member.role}
+                onChange={(role) => updateMember(member.id, { role })}
+                buttonClassName="mt-0 px-3 py-2"
+                options={[
+                  { value: "Owner", label: "Owner" },
+                  { value: "Partner", label: "Partner" },
+                  { value: "Viewer", label: "Viewer" },
+                ]}
+              />
               <input type="number" value={member.monthlyContribution} onChange={(event) => updateMember(member.id, { monthlyContribution: Number(event.target.value) })} className="rounded-md border border-border bg-background px-3 py-2 font-bold" />
             </div>
           ))}

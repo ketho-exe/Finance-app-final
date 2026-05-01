@@ -6,7 +6,7 @@ const settings = [
   "Light, dark, and system theme support",
   "Self-hosted Satoshi font files",
   "Password sign-in with optional magic link",
-  "Private account data for cards, pots, wishlist, and transactions",
+  "Private account data for accounts, pots, wishlist, and transactions",
   "PDF monthly reports",
 ];
 
@@ -32,7 +32,7 @@ export default function SettingsPage() {
         </section>
         <section className="surface p-5">
           <h2 className="text-xl font-black">Workspace defaults</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">Ledgerly keeps each signed-in workspace separate, uses GBP by default, and gives every user a private set of cards, transactions, goals, budgets, and reports.</p>
+          <p className="mt-2 text-sm leading-6 text-muted">Ledgerly keeps each signed-in workspace separate, uses GBP by default, and gives every user a private set of accounts, transactions, goals, budgets, and reports.</p>
         </section>
         <CustomCategoriesContent />
       </div>

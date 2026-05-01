@@ -120,17 +120,20 @@ export function salaryFromRow(row: Record<string, unknown>): SalarySettings {
   return {
     gross: numberValue(row.gross_annual),
     pension: numberValue(row.pension_percent),
+    pensionTiming: row.pension_tax_timing === "after-tax" ? "after-tax" : "before-tax",
     studentLoan: row.student_loan_plan as SalarySettings["studentLoan"],
     paydayDay: numberValue(row.payday_day ?? 25),
     incomeCardId: row.income_card_id ? String(row.income_card_id) : undefined,
   };
 }
 
-export function salaryToRow(salary: SalarySettings, userId: string) {
+export function salaryToRow(salary: SalarySettings, userId: string, options: { includeExtendedColumns?: boolean } = {}) {
+  const includeExtendedColumns = options.includeExtendedColumns ?? true;
   return {
     user_id: userId,
     gross_annual: salary.gross,
     pension_percent: salary.pension,
+    ...(includeExtendedColumns ? { pension_tax_timing: salary.pensionTiming } : {}),
     student_loan_plan: salary.studentLoan,
     updated_at: new Date().toISOString(),
   };

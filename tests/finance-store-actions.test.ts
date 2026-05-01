@@ -78,7 +78,7 @@ test("local snapshots preserve deletions and user-created finance data", () => {
     transactions: [],
     pots: [],
     wishlist: [],
-    salary: { gross: 61000, pension: 8, studentLoan: "plan2", paydayDay: 28, incomeCardId: "card-1" },
+    salary: { gross: 61000, pension: 8, pensionTiming: "after-tax", studentLoan: "plan2", paydayDay: 28, incomeCardId: "card-1" },
     budgets: [{ id: "budget-1", category: "Groceries", monthlyLimit: 450, commitment: "flexible" }],
     subscriptions: [],
     customCategories: [],
@@ -91,4 +91,5 @@ test("local snapshots preserve deletions and user-created finance data", () => {
   assert.equal(hydrated?.transactions.length, 0);
   assert.equal(hydrated?.budgets[0].id, "budget-1");
   assert.equal(hydrated?.salary.pension, 8);
+  assert.equal(hydrated?.salary.pensionTiming, "after-tax");
 });

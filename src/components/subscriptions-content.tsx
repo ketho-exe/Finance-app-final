@@ -3,7 +3,7 @@
 import { BellRing, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
-import type { Category } from "@/lib/finance";
+import { SelectField } from "@/components/select-field";
 import { calculateMonthlySubscriptionTotal, findUpcomingRenewals, type Subscription } from "@/lib/finance-insights";
 import { createId, useFinance } from "@/lib/finance-store";
 import { preciseCurrency } from "@/lib/utils";
@@ -56,32 +56,25 @@ export function SubscriptionsContent() {
         <form onSubmit={submit} className="space-y-4">
           <Field label="Name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
           <NumberField label="Amount" value={form.amount} onChange={(value) => setForm({ ...form, amount: value })} />
-          <label className="block">
-            <span className="text-sm font-bold text-muted">Category</span>
-            <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as Category })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              {categoryOptions.filter((category) => category !== "Income").map((category) => (
-                <option key={category}>{category}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm font-bold text-muted">Repeat pattern</span>
-            <select value={form.repeatPattern ?? "monthly"} onChange={(event) => setForm({ ...form, repeatPattern: event.target.value as Subscription["repeatPattern"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="four-weekly">Every 4 weeks</option>
-              <option value="custom">Custom</option>
-            </select>
-          </label>
+          <SelectField
+            label="Category"
+            value={form.category}
+            onChange={(category) => setForm({ ...form, category })}
+            options={categoryOptions.filter((category) => category !== "Income").map((category) => ({ value: category, label: category }))}
+          />
+          <SelectField
+            label="Repeat pattern"
+            value={form.repeatPattern ?? "monthly"}
+            onChange={(repeatPattern) => setForm({ ...form, repeatPattern })}
+            options={[
+              { value: "weekly", label: "Weekly" },
+              { value: "monthly", label: "Monthly" },
+              { value: "four-weekly", label: "Every 4 weeks" },
+              { value: "custom", label: "Custom" },
+            ]}
+          />
           <Field label="Start date" type="date" value={form.startDate ?? ""} onChange={(value) => setForm({ ...form, startDate: value })} />
-          <label className="block">
-            <span className="text-sm font-bold text-muted">Payment card</span>
-            <select value={form.cardId} onChange={(event) => setForm({ ...form, cardId: event.target.value })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              {cards.map((card) => (
-                <option key={card.id} value={card.id}>{card.name}</option>
-              ))}
-            </select>
-          </label>
+          <SelectField label="Payment account" value={form.cardId} onChange={(cardId) => setForm({ ...form, cardId })} options={cards.map((card) => ({ value: card.id, label: card.name }))} />
           <NumberField label="Renewal day" min={1} max={31} value={form.renewalDay} onChange={(value) => setForm({ ...form, renewalDay: value })} />
           <NumberField label="Warning days" min={1} max={31} value={form.warningDays} onChange={(value) => setForm({ ...form, warningDays: value })} />
           <button className="h-11 w-full rounded-md bg-foreground px-4 font-black text-background">Save subscription</button>
@@ -127,7 +120,7 @@ export function SubscriptionsContent() {
               </div>
               <p className="mt-4 text-xl font-black">{preciseCurrency.format(item.amount)}</p>
               <p className="mt-2 text-sm text-muted">
-                Paid from {cards.find((card) => card.id === item.cardId)?.name ?? "Unknown card"} on day {item.renewalDay}. Repeats {repeatLabel(item.repeatPattern)}. Warning starts {item.warningDays} days before renewal.
+                Paid from {cards.find((card) => card.id === item.cardId)?.name ?? "Unknown account"} on day {item.renewalDay}. Repeats {repeatLabel(item.repeatPattern)}. Warning starts {item.warningDays} days before renewal.
               </p>
             </article>
           ))}

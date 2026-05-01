@@ -2,6 +2,7 @@
 
 import Papa from "papaparse";
 import { useState } from "react";
+import { SelectField } from "@/components/select-field";
 import type { Category } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
 
@@ -99,12 +100,7 @@ export function CsvImporter() {
       {rows.length > 0 ? (
         <div className="mt-5 overflow-x-auto">
           <div className="mb-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-            <select defaultValue="" onChange={(event) => applyTemplate(event.target.value)} className="focus-ring rounded-md border border-border bg-background px-3 py-2 text-sm font-bold">
-              <option value="" disabled>Apply saved mapping</option>
-              {csvTemplates.map((template) => (
-                <option key={template.id} value={template.id}>{template.bankName}</option>
-              ))}
-            </select>
+            <SelectField value="" onChange={applyTemplate} buttonClassName="mt-0 px-3 py-2 text-sm" options={[{ value: "", label: "Apply saved mapping" }, ...csvTemplates.map((template) => ({ value: template.id, label: template.bankName }))]} />
             <input placeholder="Mapping name" value={templateName} onChange={(event) => setTemplateName(event.target.value)} className="focus-ring rounded-md border border-border bg-background px-3 py-2 text-sm font-bold" />
             <button type="button" onClick={saveCurrentMapping} className="rounded-md border border-border px-3 py-2 text-sm font-black">Save mapping</button>
           </div>
@@ -116,7 +112,7 @@ export function CsvImporter() {
                 <th className="border-b border-border py-3">Description</th>
                 <th className="border-b border-border py-3">Amount</th>
                 <th className="border-b border-border py-3">Category</th>
-                <th className="border-b border-border py-3">Card</th>
+                <th className="border-b border-border py-3">Account</th>
               </tr>
             </thead>
             <tbody>
@@ -127,20 +123,10 @@ export function CsvImporter() {
                   <td className="border-b border-border py-3">{row.Description ?? "-"}</td>
                   <td className="border-b border-border py-3 font-bold">{row.Amount ?? "-"}</td>
                   <td className="border-b border-border py-3">
-                    <select value={row.mappedCategory} onChange={(event) => updateRow(index, { mappedCategory: event.target.value as Category })} className="focus-ring w-full rounded-md border border-border bg-background px-2 py-2 font-bold">
-                      {categoryOptions.map((category) => (
-                        <option key={category}>{category}</option>
-                      ))}
-                    </select>
+                    <SelectField value={row.mappedCategory ?? "Groceries"} onChange={(mappedCategory) => updateRow(index, { mappedCategory })} buttonClassName="mt-0 px-2 py-2" options={categoryOptions.map((category) => ({ value: category, label: category }))} />
                   </td>
                   <td className="border-b border-border py-3">
-                    <select value={row.mappedCardId} onChange={(event) => updateRow(index, { mappedCardId: event.target.value })} className="focus-ring w-full rounded-md border border-border bg-background px-2 py-2 font-bold">
-                      {cards.map((card) => (
-                        <option key={card.id} value={card.id}>
-                          {card.name}
-                        </option>
-                      ))}
-                    </select>
+                    <SelectField value={row.mappedCardId ?? ""} onChange={(mappedCardId) => updateRow(index, { mappedCardId })} buttonClassName="mt-0 px-2 py-2" options={cards.map((card) => ({ value: card.id, label: card.name }))} />
                   </td>
                 </tr>
               ))}

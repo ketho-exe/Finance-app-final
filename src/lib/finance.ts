@@ -123,9 +123,12 @@ export const wishlist: WishlistItem[] = [
   { id: "wish-keyboard", name: "Mechanical keyboard", price: 190, priority: "Low", saved: 90 },
 ];
 
-export function calculateUkSalary(grossAnnual: number, pensionPercent: number, studentLoanPlan: "none" | "plan1" | "plan2" | "plan5") {
+export type PensionTiming = "before-tax" | "after-tax";
+
+export function calculateUkSalary(grossAnnual: number, pensionPercent: number, studentLoanPlan: "none" | "plan1" | "plan2" | "plan5", pensionTiming: PensionTiming = "before-tax") {
   const pension = grossAnnual * (pensionPercent / 100);
-  const taxableGross = Math.max(0, grossAnnual - pension);
+  const pensionReliefBeforeTax = pensionTiming === "before-tax";
+  const taxableGross = Math.max(0, grossAnnual - (pensionReliefBeforeTax ? pension : 0));
   const personalAllowance = grossAnnual > 125140 ? 0 : Math.max(0, 12570 - Math.max(0, grossAnnual - 100000) / 2);
   const incomeTax =
     Math.max(0, Math.min(taxableGross, 50270) - personalAllowance) * 0.2 +
@@ -133,7 +136,8 @@ export function calculateUkSalary(grossAnnual: number, pensionPercent: number, s
     Math.max(0, taxableGross - 125140) * 0.45;
   const ni = Math.max(0, Math.min(grossAnnual, 50270) - 12570) * 0.08 + Math.max(0, grossAnnual - 50270) * 0.02;
   const thresholds = { none: Infinity, plan1: 24990, plan2: 27295, plan5: 25000 };
-  const studentLoan = studentLoanPlan === "none" ? 0 : Math.max(0, grossAnnual - thresholds[studentLoanPlan]) * 0.09;
+  const loanAssessmentGross = pensionReliefBeforeTax ? taxableGross : grossAnnual;
+  const studentLoan = studentLoanPlan === "none" ? 0 : Math.max(0, loanAssessmentGross - thresholds[studentLoanPlan]) * 0.09;
   const takeHome = grossAnnual - pension - incomeTax - ni - studentLoan;
 
   return {

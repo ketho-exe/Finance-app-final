@@ -13,9 +13,12 @@ import {
   FileBarChart,
   Gift,
   Home,
+  Menu,
   Plus,
   PiggyBank,
   ReceiptText,
+  PanelLeftClose,
+  PanelLeftOpen,
   Users,
   User,
   Settings,
@@ -31,7 +34,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/salary", label: "Salary", icon: CircleDollarSign },
-  { href: "/cards", label: "Cards", icon: CreditCard },
+  { href: "/cards", label: "Accounts", icon: CreditCard },
   { href: "/transactions", label: "Transactions", icon: WalletCards },
   { href: "/pots", label: "Pots", icon: PiggyBank },
   { href: "/wishlist", label: "Wishlist", icon: Gift },
@@ -50,6 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { error } = useFinance();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const commands = useMemo(() => navItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
 
@@ -66,14 +70,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-border bg-panel/92 px-4 py-5 backdrop-blur xl:flex xl:flex-col">
-        <Link href="/" className="flex items-center gap-3 px-2">
-          <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
-          <span>
-            <span className="block text-lg font-black">Ledgerly</span>
-            <span className="text-sm text-muted">UK money control</span>
-          </span>
-        </Link>
+      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-panel/92 px-4 py-5 backdrop-blur transition-[width] xl:flex xl:flex-col", sidebarCollapsed ? "w-20" : "w-72")}>
+        <div className={cn("flex items-center", sidebarCollapsed ? "justify-center" : "justify-between gap-3")}>
+          <Link href="/" className={cn("flex min-w-0 items-center gap-3", sidebarCollapsed && "justify-center")}>
+            <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
+            {!sidebarCollapsed ? (
+              <span className="min-w-0">
+                <span className="block text-lg font-black">Ledgerly</span>
+                <span className="text-sm text-muted">Personal finance, clearly</span>
+              </span>
+            ) : null}
+          </Link>
+          {!sidebarCollapsed ? (
+            <button type="button" onClick={() => setSidebarCollapsed(true)} className="grid size-9 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground" title="Hide sidebar">
+              <PanelLeftClose className="size-4" />
+            </button>
+          ) : null}
+        </div>
+        {sidebarCollapsed ? (
+          <button type="button" onClick={() => setSidebarCollapsed(false)} className="mt-4 grid size-10 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground" title="Show sidebar">
+            <PanelLeftOpen className="size-4" />
+          </button>
+        ) : null}
         <nav className="mt-8 flex flex-1 flex-col gap-1">
           {navItems.map((item) => {
             const active = pathname === item.href;
@@ -84,25 +102,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-muted transition",
+                  sidebarCollapsed && "justify-center px-0",
                   "hover:bg-soft hover:text-foreground",
                   active && "bg-foreground text-background hover:bg-foreground hover:text-background",
                 )}
+                title={sidebarCollapsed ? item.label : undefined}
               >
                 <Icon className="size-4 shrink-0" />
-                {item.label}
+                {!sidebarCollapsed ? item.label : null}
               </Link>
             );
           })}
         </nav>
-        <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
+        {!sidebarCollapsed ? <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
           <p className="font-bold text-foreground">Private workspace</p>
-          <p className="mt-1">Your cards, budgets, goals, and reports stay tied to your account.</p>
-        </div>
+          <p className="mt-1">Your accounts, budgets, goals, and reports stay tied to your profile.</p>
+        </div> : null}
       </aside>
 
-      <div className="xl:pl-72">
+      <div className={cn("transition-[padding] xl:pl-72", sidebarCollapsed && "xl:pl-20")}>
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
           <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <button type="button" onClick={() => setSidebarCollapsed((current) => !current)} className="hidden size-10 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground xl:grid" title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}>
+              <Menu className="size-5" />
+            </button>
             <Link href="/" className="flex items-center gap-2 xl:hidden">
               <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={36} height={36} className="size-9 rounded-md object-contain" priority />
               <span className="font-black">Ledgerly</span>
@@ -156,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="grid gap-3">
           {[
             ["Transaction", "/transactions"],
-            ["Card", "/cards"],
+            ["Account", "/cards"],
             ["Pot", "/pots"],
             ["Subscription", "/subscriptions"],
             ["Wishlist item", "/wishlist"],

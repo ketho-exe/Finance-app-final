@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { calculateDebtPayoff } from "@/lib/finance-insights";
 import { GlideOverlay } from "@/components/glide-overlay";
+import { SelectField } from "@/components/select-field";
 import { cardTransactions, type MoneyCard } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
 import { currency, percent, preciseCurrency } from "@/lib/utils";
@@ -47,7 +48,7 @@ export function CardsManager() {
 
   return (
     <>
-      <GlideOverlay open={Boolean(focusedCard)} title={focusedCard?.name ?? "Card details"} onClose={() => setFocusedCard(null)}>
+      <GlideOverlay open={Boolean(focusedCard)} title={focusedCard?.name ?? "Account details"} onClose={() => setFocusedCard(null)}>
         {focusedCard ? (
           <div className="space-y-5">
             <div className="rounded-md bg-soft p-4">
@@ -59,13 +60,15 @@ export function CardsManager() {
               <div>
                 <h3 className="text-xl font-black">Debt payoff planner</h3>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-sm font-bold text-muted">Payoff method</span>
-                    <select value={payoffMethod} onChange={(event) => setPayoffMethod(event.target.value as "snowball" | "avalanche")} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-                      <option value="avalanche">Avalanche</option>
-                      <option value="snowball">Snowball</option>
-                    </select>
-                  </label>
+                  <SelectField
+                    label="Payoff method"
+                    value={payoffMethod}
+                    onChange={setPayoffMethod}
+                    options={[
+                      { value: "avalanche", label: "Avalanche" },
+                      { value: "snowball", label: "Snowball" },
+                    ]}
+                  />
                   <MiniStat label="APR" value={`${focusedCard.apr ?? (focusedCard.type === "credit" ? 24.9 : 39.9)}%`} />
                 </div>
                 <input type="range" min="50" max="1500" step="25" value={debtPayment} onChange={(event) => setDebtPayment(Number(event.target.value))} className="mt-4 w-full accent-[var(--accent)]" />
@@ -81,7 +84,7 @@ export function CardsManager() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted">Debt planning appears for credit cards or accounts with overdraft exposure.</p>
+              <p className="text-sm text-muted">Debt planning appears for credit accounts or accounts with overdraft exposure.</p>
             )}
             <div>
               <h3 className="text-xl font-black">Recent transactions</h3>
@@ -100,22 +103,24 @@ export function CardsManager() {
       <div className="mb-5 flex justify-end">
         <button type="button" onClick={openAdd} className="flex h-11 items-center gap-2 rounded-md bg-foreground px-4 font-black text-background">
           <Plus className="size-4" />
-          Add card
+          Add account
         </button>
       </div>
-      <GlideOverlay open={overlayOpen} title={form.id ? "Edit card" : "Add card"} onClose={() => setOverlayOpen(false)}>
+      <GlideOverlay open={overlayOpen} title={form.id ? "Edit account" : "Add account"} onClose={() => setOverlayOpen(false)}>
         <form onSubmit={submit} className="space-y-4">
-        <h2 className="text-xl font-black">{form.id ? "Edit card" : "Add card"}</h2>
-        <Field label="Card name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
+        <h2 className="text-xl font-black">{form.id ? "Edit account" : "Add account"}</h2>
+        <Field label="Account name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
         <Field label="Provider" value={form.provider} onChange={(value) => setForm({ ...form, provider: value })} />
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Type</span>
-          <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as MoneyCard["type"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-            <option value="current">Current</option>
-            <option value="credit">Credit</option>
-            <option value="savings">Savings</option>
-          </select>
-        </label>
+        <SelectField
+          label="Type"
+          value={form.type}
+          onChange={(type) => setForm({ ...form, type })}
+          options={[
+            { value: "current", label: "Current" },
+            { value: "credit", label: "Credit" },
+            { value: "savings", label: "Savings" },
+          ]}
+        />
         <NumberField label="Balance" value={form.balance} onChange={(value) => setForm({ ...form, balance: value })} />
         <NumberField label="Credit limit" value={form.limit ?? 0} onChange={(value) => setForm({ ...form, limit: value || undefined })} />
         <NumberField label="Overdraft" value={form.overdraft ?? 0} onChange={(value) => setForm({ ...form, overdraft: value || undefined })} />
@@ -149,10 +154,10 @@ export function CardsManager() {
                     </button>
                   </div>
                   <div className="flex gap-2">
-                    <button title="Edit card" type="button" onClick={() => openEdit(card)} className="grid size-9 place-items-center rounded-md border border-border">
+                    <button title="Edit account" type="button" onClick={() => openEdit(card)} className="grid size-9 place-items-center rounded-md border border-border">
                       <Pencil className="size-4" />
                     </button>
-                    <button title="Delete card" type="button" onClick={() => deleteCard(card.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
+                    <button title="Delete account" type="button" onClick={() => deleteCard(card.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
                       <Trash2 className="size-4" />
                     </button>
                   </div>

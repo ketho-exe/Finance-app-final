@@ -70,7 +70,7 @@ function LoginScreen({ loadingSession }: { loadingSession: boolean }) {
         <div>
           <p className="text-sm font-black uppercase text-background/70">Financial control</p>
           <h1 className="mt-4 max-w-2xl text-6xl font-black leading-none">Know what is safe to spend before the month gets noisy.</h1>
-          <p className="mt-6 max-w-xl text-lg text-background/75">Track salary, cards, budgets, pots, subscriptions, reports, and household finances from one secure workspace.</p>
+          <p className="mt-6 max-w-xl text-lg text-background/75">Track salary, accounts, budgets, pots, subscriptions, reports, and household finances from one secure workspace.</p>
         </div>
       </section>
       <section className="flex min-h-screen items-center justify-center px-5 py-10">

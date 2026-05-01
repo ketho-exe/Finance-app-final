@@ -3,6 +3,7 @@
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
+  type PensionTiming,
   type MoneyCard,
   type Pot,
   type Transaction,
@@ -37,6 +38,7 @@ import { createClient } from "@/lib/supabase-client";
 export type SalarySettings = {
   gross: number;
   pension: number;
+  pensionTiming: PensionTiming;
   studentLoan: "none" | "plan1" | "plan2" | "plan5";
   paydayDay: number;
   incomeCardId?: string;
@@ -101,6 +103,7 @@ type FinanceState = {
 const defaultSalary: SalarySettings = {
   gross: 52000,
   pension: 5,
+  pensionTiming: "before-tax",
   studentLoan: "plan2",
   paydayDay: 25,
   incomeCardId: undefined,
@@ -278,8 +281,18 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const persistSalary = useCallback(async (settings: SalarySettings) => {
     if (!supabase || !userId) return;
     const { error: saveError } = await supabase.from("salary_settings").upsert(salaryToRow(settings, userId));
-    if (saveError) setError(saveError.message);
-    else setError("");
+    if (!saveError) {
+      setError("");
+      return;
+    }
+
+    if (saveError.code === "PGRST204") {
+      const { error: retryError } = await supabase.from("salary_settings").upsert(salaryToRow(settings, userId, { includeExtendedColumns: false }));
+      setError(retryError ? retryError.message : "");
+      return;
+    }
+
+    setError(saveError.message);
   }, [supabase, userId]);
 
   const persistBudget = useCallback(async (budget: Budget) => {

@@ -11,7 +11,7 @@ export function StatisticsContent() {
   const { transactions, salary } = useFinance();
   const ranked = Object.entries(categorySpend(transactions)).sort((a, b) => b[1] - a[1]);
   const top = ranked[0];
-  const monthlyTakeHome = calculateUkSalary(salary.gross, salary.pension, salary.studentLoan).takeHomeMonthly;
+  const monthlyTakeHome = calculateUkSalary(salary.gross, salary.pension, salary.studentLoan, salary.pensionTiming).takeHomeMonthly;
   const predictedNet = buildCashFlowSeries({ transactions, monthlySalary: monthlyTakeHome }).slice(-2).reduce((sum, item) => sum + item.net, 0);
   const outgoings = transactions.filter((item) => item.amount < 0);
   const avgTransaction = outgoings.reduce((sum, item) => sum + Math.abs(item.amount), 0) / Math.max(1, outgoings.length);

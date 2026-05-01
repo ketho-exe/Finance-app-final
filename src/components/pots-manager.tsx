@@ -3,6 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
+import { SelectField } from "@/components/select-field";
 import type { Pot } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
 import { currency, percent } from "@/lib/utils";
@@ -50,13 +51,15 @@ export function PotsManager() {
         <form onSubmit={submit} className="space-y-4">
         <h2 className="text-xl font-black">{form.id ? "Edit pot" : "Add pot"}</h2>
         <TextField label="Name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Kind</span>
-          <select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value as Pot["kind"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-            <option value="saving">Saving</option>
-            <option value="goal">Goal</option>
-          </select>
-        </label>
+        <SelectField
+          label="Kind"
+          value={form.kind}
+          onChange={(kind) => setForm({ ...form, kind })}
+          options={[
+            { value: "saving", label: "Saving" },
+            { value: "goal", label: "Goal" },
+          ]}
+        />
         <NumberField label="Current" value={form.current} onChange={(value) => setForm({ ...form, current: value })} />
         <NumberField label="Target" value={form.target} onChange={(value) => setForm({ ...form, target: value })} />
         <NumberField label="Monthly contribution" value={form.monthlyContribution} onChange={(value) => setForm({ ...form, monthlyContribution: value })} />

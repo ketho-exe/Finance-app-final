@@ -71,12 +71,13 @@ test("maps transaction rows to UI transactions and back", () => {
 test("maps pot, wishlist, and salary rows", () => {
   assert.equal(potFromRow({ id: "p1", name: "Trip", kind: "goal", current_amount: "10", target_amount: "100", monthly_contribution: "5" }).target, 100);
   assert.equal(wishlistFromRow({ id: "w1", name: "Chair", price: "300", saved_amount: "20", priority: "High" }).saved, 20);
-  const salary = salaryFromRow({ gross_annual: "60000", pension_percent: "6", student_loan_plan: "plan2", payday_day: 25, income_card_id: "00000000-0000-4000-8000-000000000001" });
+  const salary = salaryFromRow({ gross_annual: "60000", pension_percent: "6", pension_tax_timing: "after-tax", student_loan_plan: "plan2", payday_day: 25, income_card_id: "00000000-0000-4000-8000-000000000001" });
   assert.equal(salary.pension, 6);
+  assert.equal(salary.pensionTiming, "after-tax");
   assert.equal(salary.paydayDay, 25);
   assert.equal(potToRow({ id: "p1", name: "Trip", kind: "goal", current: 10, target: 100, monthlyContribution: 5 }, "user-1").target_amount, 100);
   assert.equal(wishlistToRow({ id: "w1", name: "Chair", price: 300, saved: 20, priority: "High" }, "user-1").saved_amount, 20);
-  assert.deepEqual(Object.keys(salaryToRow({ gross: 60000, pension: 6, studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1")).sort(), ["gross_annual", "pension_percent", "student_loan_plan", "updated_at", "user_id"]);
+  assert.deepEqual(Object.keys(salaryToRow({ gross: 60000, pension: 6, pensionTiming: "after-tax", studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1")).sort(), ["gross_annual", "pension_percent", "pension_tax_timing", "student_loan_plan", "updated_at", "user_id"]);
 });
 
 test("maps budget and subscription rows", () => {

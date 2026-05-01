@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { cards, transactions } from "../src/lib/finance";
+import { calculateUkSalary, cards, transactions } from "../src/lib/finance";
 import {
   buildCashFlowSeries,
   buildBudgetAlerts,
@@ -130,6 +130,16 @@ test("calculateMonthlySubscriptionTotal normalises repeat patterns", () => {
   assert.equal(total, 111.67);
 });
 
+test("calculateUkSalary supports pension contributions before or after tax", () => {
+  const beforeTax = calculateUkSalary(52000, 5, "plan2", "before-tax");
+  const afterTax = calculateUkSalary(52000, 5, "plan2", "after-tax");
+
+  assert.equal(beforeTax.pension, 2600);
+  assert.equal(afterTax.pension, 2600);
+  assert.ok(beforeTax.takeHomeAnnual > afterTax.takeHomeAnnual);
+  assert.ok(afterTax.incomeTax > beforeTax.incomeTax);
+});
+
 test("suggestCategory recognises merchant keywords", () => {
   const suggestion = suggestCategory("Tesco Express weekly shop", -32, transactions);
 
@@ -210,7 +220,8 @@ test("affordability, emergency buffer, alerts, and wishlist plans return actiona
   assert.equal(buffer.target, 1000);
   assert.equal(buffer.progress, 25);
 
-  const alerts = buildBudgetAlerts([{ id: "b1", category: "Eating out", monthlyLimit: 100 }], [{ id: "1", date: "2026-04-01", merchant: "Cafe", category: "Eating out", amount: -85, cardId: "c1" }], []);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const alerts = buildBudgetAlerts([{ id: "b1", category: "Eating out", monthlyLimit: 100 }], [{ id: "1", date: `${currentMonth}-01`, merchant: "Cafe", category: "Eating out", amount: -85, cardId: "c1" }], []);
   assert.equal(alerts[0].type, "budget");
 
   const wishlist = planWishlistAffordability([{ id: "w1", name: "Ticket", price: 250, saved: 50, priority: "High" }], 100);

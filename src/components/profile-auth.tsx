@@ -2,6 +2,7 @@
 
 import { LogOut, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { SelectField } from "@/components/select-field";
 import { createClient } from "@/lib/supabase-client";
 import { useFinance } from "@/lib/finance-store";
 
@@ -87,14 +88,16 @@ export function ProfileAuth() {
           <span className="text-sm font-bold text-muted">Display name</span>
           <input value={profile.display_name ?? ""} onChange={(event) => setProfile({ ...profile, display_name: event.target.value })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
         </label>
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Currency</span>
-          <select value={profile.currency} onChange={(event) => setProfile({ ...profile, currency: event.target.value })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-            <option value="GBP">GBP</option>
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-          </select>
-        </label>
+        <SelectField
+          label="Currency"
+          value={profile.currency}
+          onChange={(currency) => setProfile({ ...profile, currency })}
+          options={[
+            { value: "GBP", label: "GBP" },
+            { value: "EUR", label: "EUR" },
+            { value: "USD", label: "USD" },
+          ]}
+        />
         <button disabled={loading} className="flex h-11 items-center gap-2 rounded-md bg-foreground px-4 font-black text-background disabled:opacity-60" type="submit">
           <Save className="size-4" />
           {loading ? "Saving..." : "Save profile"}

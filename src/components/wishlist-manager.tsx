@@ -3,6 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
+import { SelectField } from "@/components/select-field";
 import { planWishlistAffordability } from "@/lib/finance-insights";
 import type { WishlistItem } from "@/lib/finance";
 import { createId, useFinance } from "@/lib/finance-store";
@@ -54,14 +55,16 @@ export function WishlistManager() {
         <TextField label="Name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
         <NumberField label="Price" value={form.price} onChange={(value) => setForm({ ...form, price: value })} />
         <NumberField label="Saved" value={form.saved} onChange={(value) => setForm({ ...form, saved: value })} />
-        <label className="block">
-          <span className="text-sm font-bold text-muted">Priority</span>
-          <select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value as WishlistItem["priority"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </label>
+        <SelectField
+          label="Priority"
+          value={form.priority}
+          onChange={(priority) => setForm({ ...form, priority })}
+          options={[
+            { value: "High", label: "High" },
+            { value: "Medium", label: "Medium" },
+            { value: "Low", label: "Low" },
+          ]}
+        />
         <button className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 font-black text-background" type="submit">
           <Plus className="size-4" />
           Save

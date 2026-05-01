@@ -3,7 +3,7 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { GlideOverlay } from "@/components/glide-overlay";
-import type { Category } from "@/lib/finance";
+import { SelectField } from "@/components/select-field";
 import { calculateBudgetUsage, type Budget } from "@/lib/finance-insights";
 import { createId, useFinance } from "@/lib/finance-store";
 import { currency, percent } from "@/lib/utils";
@@ -47,41 +47,38 @@ export function BudgetsContent() {
       </div>
       <GlideOverlay open={overlayOpen} title={form.id ? "Edit budget" : "Add budget"} onClose={() => setOverlayOpen(false)}>
         <form onSubmit={submit} className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-bold text-muted">Category</span>
-            <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as Category })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              {categoryOptions.filter((category) => category !== "Income").map((category) => (
-                <option key={category}>{category}</option>
-              ))}
-            </select>
-          </label>
+          <SelectField
+            label="Category"
+            value={form.category}
+            onChange={(category) => setForm({ ...form, category })}
+            options={categoryOptions.filter((category) => category !== "Income").map((category) => ({ value: category, label: category }))}
+          />
           <label className="block">
             <span className="text-sm font-bold text-muted">Monthly limit</span>
             <input type="number" step="0.01" value={form.monthlyLimit} onChange={(event) => setForm({ ...form, monthlyLimit: Number(event.target.value) })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
           </label>
-          <label className="block">
-            <span className="text-sm font-bold text-muted">Budget behaviour</span>
-            <select value={form.commitment ?? "flexible"} onChange={(event) => setForm({ ...form, commitment: event.target.value as Budget["commitment"] })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-              <option value="flexible">Flexible spending limit</option>
-              <option value="bill">Non-negotiable outgoing</option>
-              <option value="reserve">Keep in account</option>
-            </select>
-          </label>
+          <SelectField
+            label="Budget behaviour"
+            value={form.commitment ?? "flexible"}
+            onChange={(commitment) => setForm({ ...form, commitment })}
+            options={[
+              { value: "flexible", label: "Flexible spending limit" },
+              { value: "bill", label: "Non-negotiable outgoing" },
+              { value: "reserve", label: "Keep in account" },
+            ]}
+          />
           {form.commitment === "bill" ? (
             <>
               <label className="block">
                 <span className="text-sm font-bold text-muted">Due day</span>
                 <input type="number" min="1" max="31" value={form.dueDay ?? 1} onChange={(event) => setForm({ ...form, dueDay: Number(event.target.value) })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold" />
               </label>
-              <label className="block">
-                <span className="text-sm font-bold text-muted">Paid from</span>
-                <select value={form.cardId ?? ""} onChange={(event) => setForm({ ...form, cardId: event.target.value || undefined })} className="focus-ring mt-2 w-full rounded-md border border-border bg-background px-3 py-3 font-bold">
-                  <option value="">Any current balance</option>
-                  {cards.map((card) => (
-                    <option key={card.id} value={card.id}>{card.name}</option>
-                  ))}
-                </select>
-              </label>
+              <SelectField
+                label="Paid from"
+                value={form.cardId ?? ""}
+                onChange={(cardId) => setForm({ ...form, cardId: cardId || undefined })}
+                options={[{ value: "", label: "Any current balance" }, ...cards.map((card) => ({ value: card.id, label: card.name }))]}
+              />
             </>
           ) : null}
           <button className="h-11 w-full rounded-md bg-foreground px-4 font-black text-background">Save budget</button>

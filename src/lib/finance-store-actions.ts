@@ -6,6 +6,7 @@ export type Identified = { id: string };
 type LocalSalarySettings = {
   gross: number;
   pension: number;
+  pensionTiming: "before-tax" | "after-tax";
   studentLoan: "none" | "plan1" | "plan2" | "plan5";
   paydayDay: number;
   incomeCardId?: string;
@@ -81,7 +82,7 @@ export function hydrateLocalSnapshot(serialized: string | null): LocalFinanceSna
       transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
       pots: Array.isArray(parsed.pots) ? parsed.pots : [],
       wishlist: Array.isArray(parsed.wishlist) ? parsed.wishlist : [],
-      salary: isSalary(parsed.salary) ? parsed.salary : { gross: 52000, pension: 5, studentLoan: "plan2", paydayDay: 25 },
+      salary: isSalary(parsed.salary) ? { ...parsed.salary, pensionTiming: parsed.salary.pensionTiming ?? "before-tax" } : { gross: 52000, pension: 5, pensionTiming: "before-tax", studentLoan: "plan2", paydayDay: 25 },
       budgets: Array.isArray(parsed.budgets) ? parsed.budgets : [],
       subscriptions: Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [],
       customCategories: Array.isArray(parsed.customCategories) ? parsed.customCategories : [],

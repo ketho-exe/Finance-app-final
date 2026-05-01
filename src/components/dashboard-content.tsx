@@ -35,7 +35,7 @@ export function DashboardContent() {
     daysLeftInMonth: daysLeft,
     buffer: 250,
   });
-  const monthlySalary = calculateUkSalary(salary.gross, salary.pension, salary.studentLoan).takeHomeMonthly;
+  const monthlySalary = calculateUkSalary(salary.gross, salary.pension, salary.studentLoan, salary.pensionTiming).takeHomeMonthly;
   const payday = calculatePaydayPlan({
     currentBalance,
     monthlySalary,
@@ -69,7 +69,7 @@ export function DashboardContent() {
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total balance" value={currency.format(totalBalance)} detail="Across current, credit, and savings cards" tone="good" />
+        <StatCard label="Total balance" value={currency.format(totalBalance)} detail="Across current, credit, and savings accounts" tone="good" />
         <StatCard label={`${monthLabel} income`} value={currency.format(monthlyIncome)} detail="Income transactions this month" />
         <StatCard label={`${monthLabel} spending`} value={currency.format(monthlySpend)} detail={`Highest category: ${topCategory?.[0] ?? "None"}`} tone="warn" />
         <StatCard label="Pot progress" value={`${Math.round(potProgress * 100)}%`} detail="Average progress toward active goals" />
@@ -104,7 +104,7 @@ export function DashboardContent() {
             </div>
             <div className="mt-4 space-y-3">
               {[
-                ["Review card utilisation", "/cards"],
+                ["Review account utilisation", "/cards"],
                 ["Import latest bank CSV", "/upload"],
                 ["Re-check salary deductions", "/salary"],
               ].map(([label, href]) => (

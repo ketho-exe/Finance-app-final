@@ -24,7 +24,7 @@ const satoshi = localFont({
 export const metadata: Metadata = {
   title: "Ledgerly | UK finance tracker",
   description:
-    "A private UK finance tracker for salary, cards, pots, wishlist goals, CSV imports, and cash-flow forecasts.",
+    "A private UK finance tracker for salary, accounts, pots, wishlist goals, CSV imports, and cash-flow forecasts.",
 };
 
 export default function RootLayout({

@@ -8,11 +8,11 @@ export default function UploadPage() {
       <PageHeader
         eyebrow="CSV Upload"
         title="Import transactions from your bank"
-        description="Preview bank exports, map categories and cards, then import clean transaction rows."
+        description="Preview bank exports, map categories and accounts, then import clean transaction rows."
       />
       <CsvImporter />
       <section className="mt-6">
-        <PageHeader eyebrow="Templates" title="Supported bank formats" description="Column guides for common UK card and bank exports." />
+        <PageHeader eyebrow="Templates" title="Supported bank formats" description="Column guides for common UK account and bank exports." />
         <CsvTemplatesContent />
       </section>
     </>
