@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { calculateUkSalary } from "@/lib/finance";
 import { useFinance } from "@/lib/finance-store";
+import { secondaryNavItems } from "@/lib/navigation";
 import { buildMonthlyPlan, calculateSalaryBreakdown, type MonthlyPlanItem } from "@/lib/planning";
 import { currency, preciseCurrency } from "@/lib/utils";
 
@@ -41,6 +44,25 @@ export function PlanningContent() {
 
   return (
     <div className="space-y-6">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {secondaryNavItems
+          .filter((item) => ["/salary", "/ledger", "/reconciliation", "/statements", "/loans", "/net-worth", "/pots", "/subscriptions"].includes(item.href))
+          .map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href} className="surface flex items-center justify-between gap-3 p-4 transition hover:-translate-y-0.5 hover:border-accent/60">
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-soft text-accent">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="truncate font-black">{item.label}</span>
+                </span>
+                <ArrowUpRight className="size-4 shrink-0 text-muted" />
+              </Link>
+            );
+          })}
+      </section>
+
       <section className="grid gap-3 md:grid-cols-4">
         <Summary label="Take-home monthly" value={currency.format(takeHome.takeHomeMonthly)} />
         <Summary label="Planned costs" value={currency.format(plan.monthlyTotal)} />

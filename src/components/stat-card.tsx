@@ -12,7 +12,7 @@ export function StatCard({
   tone?: "default" | "good" | "warn";
 }) {
   return (
-    <div className="surface p-5">
+    <div className="surface p-5 transition hover:-translate-y-0.5 hover:border-accent/50">
       <p className="text-sm font-bold text-muted">{label}</p>
       <p
         className={cn(

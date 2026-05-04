@@ -6,66 +6,29 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
-  BarChart3,
-  BellRing,
-  BookOpen,
-  CircleDollarSign,
-  CreditCard,
-  Landmark,
-  FileBarChart,
-  Gift,
-  Home,
   Menu,
+  MoreHorizontal,
   Plus,
-  PiggyBank,
-  ReceiptText,
-  Scale,
   PanelLeftClose,
   PanelLeftOpen,
-  Table2,
-  Users,
-  User,
-  Settings,
   Search,
-  Upload,
-  WalletCards,
 } from "lucide-react";
 import { GlideOverlay } from "@/components/glide-overlay";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useFinance } from "@/lib/finance-store";
+import { commandNavItems, primaryNavItems, secondaryNavItems } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/salary", label: "Salary", icon: CircleDollarSign },
-  { href: "/planning", label: "Monthly Plan", icon: BookOpen },
-  { href: "/cards", label: "Accounts", icon: CreditCard },
-  { href: "/ledger", label: "Ledger", icon: Table2 },
-  { href: "/transactions", label: "Transactions", icon: WalletCards },
-  { href: "/pots", label: "Pots", icon: PiggyBank },
-  { href: "/wishlist", label: "Wishlist", icon: Gift },
-  { href: "/statistics", label: "Statistics", icon: BarChart3 },
-  { href: "/subscriptions", label: "Subscriptions", icon: BellRing },
-  { href: "/budgets", label: "Budgets", icon: ReceiptText },
-  { href: "/upload", label: "CSV Upload", icon: Upload },
-  { href: "/reconciliation", label: "Reconciliation", icon: Scale },
-  { href: "/statements", label: "Statements", icon: FileBarChart },
-  { href: "/loans", label: "Loans", icon: Landmark },
-  { href: "/net-worth", label: "Net Worth", icon: CircleDollarSign },
-  { href: "/household", label: "Household", icon: Users },
-  { href: "/reports", label: "Reports", icon: FileBarChart },
-  { href: "/profile", label: "Account", icon: User },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { error } = useFinance();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [query, setQuery] = useState("");
-  const commands = useMemo(() => navItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
+  const commands = useMemo(() => commandNavItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
+  const activePrimary = primaryNavItems.some((item) => item.href === pathname);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -80,14 +43,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-panel/92 px-4 py-5 backdrop-blur transition-[width] xl:flex xl:flex-col", sidebarCollapsed ? "w-20" : "w-72")}>
+      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-panel/95 px-4 py-5 shadow-[8px_0_30px_rgba(21,23,24,0.05)] backdrop-blur transition-[width] xl:flex xl:flex-col", sidebarCollapsed ? "w-20" : "w-72")}>
         <div className={cn("flex items-center", sidebarCollapsed ? "justify-center" : "justify-between gap-3")}>
           <Link href="/" className={cn("flex min-w-0 items-center gap-3", sidebarCollapsed && "justify-center")}>
             <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
             {!sidebarCollapsed ? (
               <span className="min-w-0">
                 <span className="block text-lg font-black">Ledgerly</span>
-                <span className="text-sm text-muted">Personal finance, clearly</span>
+                <span className="text-sm text-muted">Plan, track, reconcile</span>
               </span>
             ) : null}
           </Link>
@@ -103,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         ) : null}
         <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -114,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-muted transition",
                   sidebarCollapsed && "justify-center px-0",
                   "hover:bg-soft hover:text-foreground",
-                  active && "bg-foreground text-background hover:bg-foreground hover:text-background",
+                  active && "bg-foreground text-background shadow-sm hover:bg-foreground hover:text-background",
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
               >
@@ -123,10 +86,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className={cn(
+              "mt-2 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-muted transition hover:bg-soft hover:text-foreground",
+              sidebarCollapsed && "justify-center px-0",
+              !activePrimary && "bg-soft text-foreground",
+            )}
+            title={sidebarCollapsed ? "More" : undefined}
+          >
+            <MoreHorizontal className="size-4 shrink-0" />
+            {!sidebarCollapsed ? "More" : null}
+          </button>
         </nav>
-        {!sidebarCollapsed ? <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
-          <p className="font-bold text-foreground">Private workspace</p>
-          <p className="mt-1">Your accounts, budgets, goals, and reports stay tied to your profile.</p>
+        {!sidebarCollapsed ? <div className="rounded-md border border-border bg-soft/80 p-3 text-sm text-muted">
+          <p className="font-bold text-foreground">Workspace tools</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {secondaryNavItems.slice(0, 6).map((item) => (
+              <Link key={item.href} href={item.href} className="rounded-md bg-panel px-2 py-2 text-xs font-black text-muted hover:text-foreground">
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div> : null}
       </aside>
 
@@ -141,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-black">Ledgerly</span>
             </Link>
             <nav className="hidden flex-1 items-center gap-1 overflow-x-auto lg:flex xl:hidden">
-              {navItems.slice(0, 7).map((item) => (
+              {primaryNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -155,7 +137,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
             <div className="ml-auto flex items-center gap-2">
-              <button type="button" onClick={() => setCommandOpen(true)} className="hidden h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-bold text-muted sm:flex">
+              <button type="button" onClick={() => setMoreOpen(true)} className="hidden h-10 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-bold text-muted sm:flex xl:hidden">
+                <MoreHorizontal className="size-4" />
+                More
+              </button>
+              <button type="button" onClick={() => setCommandOpen(true)} className="hidden h-10 items-center gap-2 rounded-md border border-border bg-panel px-3 text-sm font-bold text-muted sm:flex">
                 <Search className="size-4" />
                 Search
               </button>
@@ -163,7 +149,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 lg:hidden">
-            {navItems.map((item) => (
+            {[...primaryNavItems.slice(0, 5), { href: "#more", label: "More", icon: MoreHorizontal, group: "tools" as const }].map((item) => item.href === "#more" ? (
+              <button
+                key={item.href}
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                className={cn("whitespace-nowrap rounded-md px-3 py-2 text-sm font-bold text-muted", !activePrimary && "bg-foreground text-background")}
+              >
+                {item.label}
+              </button>
+            ) : (
               <Link
                 key={item.href}
                 href={item.href}
@@ -177,7 +172,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </header>
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
           {error ? <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-bold text-danger">{error}</div> : null}
           {children}
         </main>
@@ -199,6 +194,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <ArrowUpRight className="size-4" />
             </Link>
           ))}
+        </div>
+      </GlideOverlay>
+      <GlideOverlay open={moreOpen} title="More tools" onClose={() => setMoreOpen(false)}>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {secondaryNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)} className="flex items-center gap-3 rounded-md bg-soft px-4 py-3 font-black hover:text-accent">
+                <Icon className="size-4" />
+                {item.label}
+              </Link>
+            );
+          })}
         </div>
       </GlideOverlay>
       <GlideOverlay open={commandOpen} title="Command menu" onClose={() => setCommandOpen(false)}>

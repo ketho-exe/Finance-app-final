@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f6f2;
+  --background: #f4f5f1;
   --foreground: #151718;
-  --panel: #ffffff;
-  --soft: #ece8dd;
-  --muted: #66706a;
-  --border: #ddd7c8;
+  --panel: #fffef9;
+  --soft: #e8ece3;
+  --muted: #626c66;
+  --border: #d8ded2;
   --accent: #0f766e;
-  --accent-2: #2457c5;
+  --accent-2: #315f9f;
   --danger: #b42318;
 }
 
@@ -26,21 +26,37 @@
 }
 
 .dark {
-  --background: #111312;
-  --foreground: #f5f3ea;
-  --panel: #191c1b;
-  --soft: #242826;
-  --muted: #b7beb7;
-  --border: #343a37;
+  --background: #101412;
+  --foreground: #f4f2e8;
+  --panel: #181d1a;
+  --soft: #232b26;
+  --muted: #aab4ad;
+  --border: #313b35;
   --accent: #50d2bd;
-  --accent-2: #8fb4ff;
+  --accent-2: #9bbcff;
   --danger: #ff9087;
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel) 72%, transparent), transparent 380px),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 42%),
+    linear-gradient(225deg, color-mix(in srgb, var(--accent-2) 6%, transparent), transparent 46%);
 }
 
 button,
@@ -57,6 +73,13 @@ textarea {
 .surface {
   border: 1px solid var(--border);
   background: var(--panel);
+  border-radius: 8px;
+  box-shadow: 0 18px 45px color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.surface-soft {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 78%, var(--soft));
   border-radius: 8px;
 }
 
