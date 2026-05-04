@@ -55,6 +55,7 @@ export function transactionFromRow(row: Record<string, unknown>): Transaction {
     amount: numberValue(row.amount),
     cardId: String(row.card_id ?? ""),
     notes: row.notes ? String(row.notes) : undefined,
+    source: row.source === "csv" || row.source === "recurring" ? row.source : "manual",
   };
 }
 
@@ -68,7 +69,7 @@ export function transactionToRow(transaction: Transaction, userId: string) {
     amount: transaction.amount,
     card_id: rowId(transaction.cardId) ?? null,
     notes: transaction.notes ?? null,
-    source: "manual",
+    source: transaction.source ?? "manual",
   };
 }
 

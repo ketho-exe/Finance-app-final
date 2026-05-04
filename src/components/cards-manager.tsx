@@ -157,7 +157,7 @@ export function CardsManager() {
                     <button title="Edit account" type="button" onClick={() => openEdit(card)} className="grid size-9 place-items-center rounded-md border border-border">
                       <Pencil className="size-4" />
                     </button>
-                    <button title="Delete account" type="button" onClick={() => deleteCard(card.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
+                    <button title="Delete account" type="button" onClick={() => window.confirm(`Delete ${card.name}? Linked transactions will be kept as unassigned.`) && deleteCard(card.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
                       <Trash2 className="size-4" />
                     </button>
                   </div>

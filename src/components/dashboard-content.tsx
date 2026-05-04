@@ -22,7 +22,7 @@ export function DashboardContent() {
   const monthlyIncome = spendingSummary.income;
   const monthlySpend = spendingSummary.spending;
   const topCategory = Object.entries(categorySpend(monthTransactions)).sort((a, b) => b[1] - a[1])[0];
-  const potProgress = pots.length ? pots.reduce((sum, pot) => sum + pot.current / pot.target, 0) / pots.length : 0;
+  const potProgress = pots.length ? pots.reduce((sum, pot) => sum + (pot.target > 0 ? pot.current / pot.target : 0), 0) / pots.length : 0;
   const currentBalance = cards.filter((card) => card.type === "current").reduce((sum, card) => sum + card.balance, 0);
   const savingsTarget = pots.reduce((sum, pot) => sum + pot.monthlyContribution, 0);
   const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1;

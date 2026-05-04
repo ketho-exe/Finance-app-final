@@ -52,9 +52,11 @@ test("maps transaction rows to UI transactions and back", () => {
     amount: "-21.50",
     card_id: "00000000-0000-4000-8000-000000000001",
     notes: "Weekly shop",
+    source: "csv",
   });
 
   assert.equal(transaction.category, "Groceries");
+  assert.equal(transaction.source, "csv");
   assert.deepEqual(transactionToRow(transaction, "user-1"), {
     id: "00000000-0000-4000-8000-000000000002",
     user_id: "user-1",
@@ -64,7 +66,7 @@ test("maps transaction rows to UI transactions and back", () => {
     amount: -21.5,
     card_id: "00000000-0000-4000-8000-000000000001",
     notes: "Weekly shop",
-    source: "manual",
+    source: "csv",
   });
 });
 

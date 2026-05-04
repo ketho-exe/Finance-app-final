@@ -132,7 +132,7 @@ export function TransactionsManager() {
                     <button title="Edit transaction" type="button" onClick={() => openEdit(transaction)} className="grid size-9 place-items-center rounded-md border border-border">
                       <Pencil className="size-4" />
                     </button>
-                    <button title="Delete transaction" type="button" onClick={() => deleteTransaction(transaction.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
+                    <button title="Delete transaction" type="button" onClick={() => window.confirm(`Delete transaction from ${transaction.merchant}?`) && deleteTransaction(transaction.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
                       <Trash2 className="size-4" />
                     </button>
                   </div>

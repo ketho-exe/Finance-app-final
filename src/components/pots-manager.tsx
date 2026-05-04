@@ -21,21 +21,29 @@ export function PotsManager() {
   const { pots, savePot, deletePot } = useFinance();
   const [form, setForm] = useState<Pot>(blank);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [formError, setFormError] = useState("");
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (form.target <= 0) {
+      setFormError("Target must be greater than zero.");
+      return;
+    }
     savePot({ ...form, id: form.id || createId("pot") });
     setForm(blank);
+    setFormError("");
     setOverlayOpen(false);
   }
 
   function openAdd() {
     setForm(blank);
+    setFormError("");
     setOverlayOpen(true);
   }
 
   function openEdit(pot: Pot) {
     setForm(pot);
+    setFormError("");
     setOverlayOpen(true);
   }
 
@@ -63,6 +71,7 @@ export function PotsManager() {
         <NumberField label="Current" value={form.current} onChange={(value) => setForm({ ...form, current: value })} />
         <NumberField label="Target" value={form.target} onChange={(value) => setForm({ ...form, target: value })} />
         <NumberField label="Monthly contribution" value={form.monthlyContribution} onChange={(value) => setForm({ ...form, monthlyContribution: value })} />
+        {formError ? <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm font-bold text-danger">{formError}</p> : null}
         <button className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 font-black text-background" type="submit">
           <Plus className="size-4" />
           Save
@@ -71,7 +80,7 @@ export function PotsManager() {
       </GlideOverlay>
       <div className="grid gap-5 md:grid-cols-2">
         {pots.map((pot) => {
-          const progress = Math.min(100, (pot.current / pot.target) * 100);
+          const progress = pot.target > 0 ? Math.min(100, (pot.current / pot.target) * 100) : 0;
           const remaining = Math.max(0, pot.target - pot.current);
           const months = Math.ceil(remaining / Math.max(1, pot.monthlyContribution));
           return (
@@ -85,7 +94,7 @@ export function PotsManager() {
                   <button title="Edit pot" type="button" onClick={() => openEdit(pot)} className="grid size-9 place-items-center rounded-md border border-border">
                     <Pencil className="size-4" />
                   </button>
-                  <button title="Delete pot" type="button" onClick={() => deletePot(pot.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
+                  <button title="Delete pot" type="button" onClick={() => window.confirm(`Delete ${pot.name}?`) && deletePot(pot.id)} className="grid size-9 place-items-center rounded-md border border-border text-danger">
                     <Trash2 className="size-4" />
                   </button>
                 </div>

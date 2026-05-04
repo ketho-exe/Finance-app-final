@@ -23,6 +23,7 @@ export type Transaction = {
   amount: number;
   cardId: string;
   notes?: string;
+  source?: "manual" | "csv" | "recurring";
 };
 
 export type MoneyCard = {

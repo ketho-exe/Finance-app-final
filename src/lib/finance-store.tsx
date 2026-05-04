@@ -398,7 +398,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       deleteCard: async (id) => {
         if (await deleteFromSupabase("cards", id)) {
           const nextCards = removeById(cards, id);
-          const nextTransactions = transactions.filter((transaction) => transaction.cardId !== id);
+          const nextTransactions = transactions.map((transaction) => transaction.cardId === id ? { ...transaction, cardId: "" } : transaction);
           setCards(nextCards);
           setTransactions(nextTransactions);
           persistLocal({ cards: nextCards, transactions: nextTransactions });
