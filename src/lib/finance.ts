@@ -12,6 +12,7 @@ export const categories = [
   "Health",
   "Entertainment",
   "Savings",
+  "Transfer",
 ] satisfies Category[];
 
 export type Transaction = {
@@ -153,7 +154,7 @@ export function calculateUkSalary(grossAnnual: number, pensionPercent: number, s
 
 export function categorySpend(items: Transaction[] = []) {
   return items
-    .filter((transaction) => transaction.amount < 0)
+    .filter((transaction) => transaction.amount < 0 && transaction.category.toLowerCase() !== "transfer")
     .reduce<Record<string, number>>((totals, transaction) => {
       totals[transaction.category] = (totals[transaction.category] ?? 0) + Math.abs(transaction.amount);
       return totals;

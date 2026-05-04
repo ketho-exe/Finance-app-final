@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateUkSalary, cards, transactions } from "../src/lib/finance";
+import { calculateUkSalary, cards, categorySpend, transactions } from "../src/lib/finance";
 import {
   buildCashFlowSeries,
   buildBudgetAlerts,
@@ -12,12 +12,50 @@ import {
   calculateSafeToSpendToday,
   calculateMonthlySubscriptionTotal,
   buildMonthEndForecast,
+  buildRecurringOccurrences,
+  calculatePaydayCycle,
+  calculateSpendingSummary,
   filterTransactions,
   findUpcomingRenewals,
   planWishlistAffordability,
   predictFutureBalance,
   suggestCategory,
 } from "../src/lib/finance-insights";
+
+test("calculatePaydayCycle supports fixed, last working day, weekly, and four-weekly paydays", () => {
+  assert.deepEqual(calculatePaydayCycle({ type: "fixed-day", day: 28 }, new Date("2026-05-04T09:00:00")).nextPayday, "2026-05-28");
+  assert.deepEqual(calculatePaydayCycle({ type: "last-working-day" }, new Date("2026-05-04T09:00:00")).nextPayday, "2026-05-29");
+  assert.deepEqual(calculatePaydayCycle({ type: "weekly", weekday: 5 }, new Date("2026-05-04T09:00:00")).nextPayday, "2026-05-08");
+  assert.deepEqual(calculatePaydayCycle({ type: "four-weekly", anchorDate: "2026-04-10" }, new Date("2026-05-04T09:00:00")).nextPayday, "2026-05-08");
+});
+
+test("buildRecurringOccurrences creates deterministic occurrences without duplicate keys", () => {
+  const occurrences = buildRecurringOccurrences(
+    [
+      { id: "salary", name: "Salary", amount: 2000, category: "Income", cardId: "main", type: "income", frequency: "monthly", startDate: "2026-04-28", autoCreate: true },
+      { id: "rent", name: "Rent", amount: -900, category: "Rent", cardId: "main", type: "expense", frequency: "monthly", startDate: "2026-04-01", autoCreate: false },
+    ],
+    { startDate: "2026-05-01", endDate: "2026-06-30" },
+  );
+
+  assert.deepEqual(occurrences.map((item) => item.dedupeKey), ["rent:2026-05-01", "salary:2026-05-28", "rent:2026-06-01", "salary:2026-06-28"]);
+});
+
+test("calculateSpendingSummary excludes transfers from spending", () => {
+  const summary = calculateSpendingSummary([
+    { id: "income", date: "2026-05-01", merchant: "Payroll", category: "Income", amount: 2000, cardId: "main" },
+    { id: "groceries", date: "2026-05-02", merchant: "Tesco", category: "Groceries", amount: -50, cardId: "main" },
+    { id: "transfer", date: "2026-05-03", merchant: "ISA transfer", category: "Transfer", amount: -250, cardId: "main" },
+  ]);
+
+  assert.equal(summary.income, 2000);
+  assert.equal(summary.spending, 50);
+  assert.equal(summary.transfers, 250);
+  assert.deepEqual(categorySpend([
+    { id: "groceries", date: "2026-05-02", merchant: "Tesco", category: "Groceries", amount: -50, cardId: "main" },
+    { id: "transfer", date: "2026-05-03", merchant: "ISA transfer", category: "Transfer", amount: -250, cardId: "main" },
+  ]), { Groceries: 50 });
+});
 
 test("findUpcomingRenewals returns bills due within the warning window", () => {
   const renewals = findUpcomingRenewals(

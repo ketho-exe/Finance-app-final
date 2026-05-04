@@ -21,6 +21,25 @@ export type Budget = {
   cardId?: string;
 };
 
+export type PaydayCycle =
+  | { type: "fixed-day"; day: number }
+  | { type: "last-working-day" }
+  | { type: "weekly"; weekday: number }
+  | { type: "four-weekly"; anchorDate: string };
+
+export type RecurringTransaction = {
+  id: string;
+  name: string;
+  amount: number;
+  type: "income" | "expense" | "transfer";
+  category: Category;
+  cardId: string;
+  frequency: "weekly" | "four-weekly" | "monthly";
+  startDate: string;
+  endDate?: string;
+  autoCreate: boolean;
+};
+
 export type HouseholdMember = {
   id: string;
   name: string;
@@ -209,6 +228,95 @@ function localDateKey(date: Date) {
 
 function currentMonthKey(today = new Date()) {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function calculatePaydayCycle(cycle: PaydayCycle, today = new Date()) {
+  const todayStart = startOfLocalDay(today);
+  let payday: Date;
+
+  if (cycle.type === "fixed-day") {
+    payday = nextOccurrence(cycle.day, today);
+  } else if (cycle.type === "last-working-day") {
+    payday = lastWorkingDay(today.getFullYear(), today.getMonth());
+    if (payday < todayStart) payday = lastWorkingDay(today.getFullYear(), today.getMonth() + 1);
+  } else if (cycle.type === "weekly") {
+    payday = nextWeekday(cycle.weekday, todayStart);
+  } else {
+    payday = nextFourWeeklyDate(cycle.anchorDate, todayStart);
+  }
+
+  return {
+    nextPayday: localDateKey(payday),
+    daysUntilPayday: Math.max(0, daysBetween(todayStart, payday)),
+  };
+}
+
+export function buildRecurringOccurrences(items: RecurringTransaction[], range: { startDate: string; endDate: string }) {
+  const start = parseLocalDate(range.startDate);
+  const end = parseLocalDate(range.endDate);
+  const occurrences: Array<RecurringTransaction & { dueDate: string; dedupeKey: string }> = [];
+
+  items.forEach((item) => {
+    let cursor = parseLocalDate(item.startDate);
+    const itemEnd = item.endDate ? parseLocalDate(item.endDate) : end;
+    while (cursor < start) cursor = addFrequency(cursor, item.frequency);
+    while (cursor <= end && cursor <= itemEnd) {
+      const dueDate = localDateKey(cursor);
+      occurrences.push({ ...item, dueDate, dedupeKey: `${item.id}:${dueDate}` });
+      cursor = addFrequency(cursor, item.frequency);
+    }
+  });
+
+  return occurrences.sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.name.localeCompare(b.name));
+}
+
+export function calculateSpendingSummary(transactions: Transaction[]) {
+  return transactions.reduce(
+    (summary, transaction) => {
+      const isTransfer = transaction.category.toLowerCase() === "transfer" || transaction.merchant.toLowerCase().includes("transfer");
+      if (isTransfer) {
+        summary.transfers += Math.abs(transaction.amount);
+      } else if (transaction.amount > 0) {
+        summary.income += transaction.amount;
+      } else {
+        summary.spending += Math.abs(transaction.amount);
+      }
+      return summary;
+    },
+    { income: 0, spending: 0, transfers: 0 },
+  );
+}
+
+function lastWorkingDay(year: number, month: number) {
+  const date = new Date(year, month + 1, 0);
+  while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() - 1);
+  return startOfLocalDay(date);
+}
+
+function nextWeekday(weekday: number, today: Date) {
+  const date = new Date(today);
+  const daysUntil = (weekday - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + daysUntil);
+  return startOfLocalDay(date);
+}
+
+function nextFourWeeklyDate(anchorDate: string, today: Date) {
+  const date = parseLocalDate(anchorDate);
+  while (date < today) date.setDate(date.getDate() + 28);
+  return startOfLocalDay(date);
+}
+
+function addFrequency(date: Date, frequency: RecurringTransaction["frequency"]) {
+  const next = new Date(date);
+  if (frequency === "weekly") next.setDate(next.getDate() + 7);
+  if (frequency === "four-weekly") next.setDate(next.getDate() + 28);
+  if (frequency === "monthly") next.setMonth(next.getMonth() + 1);
+  return startOfLocalDay(next);
+}
+
+function parseLocalDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function normalisedMonthlyAmount(subscription: Subscription) {

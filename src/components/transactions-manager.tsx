@@ -25,10 +25,12 @@ export function TransactionsManager() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({ direction: "all", category: "all", cardId: "all" });
   const visibleTransactions = filterTransactions(transactions, filters);
+  const movementType = form.category === "Transfer" ? "transfer" : form.amount >= 0 ? "income" : "expense";
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    saveTransaction({ ...form, id: form.id || createId("txn"), cardId: form.cardId || firstCard });
+    const signedAmount = form.category === "Transfer" ? -Math.abs(form.amount) : form.amount;
+    saveTransaction({ ...form, amount: signedAmount, id: form.id || createId("txn"), cardId: form.cardId || firstCard });
     setForm({ ...blank, cardId: firstCard });
     setOverlayOpen(false);
   }
@@ -54,6 +56,26 @@ export function TransactionsManager() {
       <GlideOverlay open={overlayOpen} title={form.id ? "Edit transaction" : "Add transaction"} onClose={() => setOverlayOpen(false)}>
         <form onSubmit={submit} className="space-y-4">
         <h2 className="text-xl font-black">{form.id ? "Edit transaction" : "Add transaction"}</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: "expense", label: "Expense" },
+            { value: "income", label: "Income" },
+            { value: "transfer", label: "Transfer" },
+          ].map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => {
+                if (item.value === "income") setForm({ ...form, amount: Math.abs(form.amount || 0), category: "Income" });
+                if (item.value === "expense") setForm({ ...form, amount: -Math.abs(form.amount || 0), category: form.category === "Income" || form.category === "Transfer" ? "Groceries" : form.category });
+                if (item.value === "transfer") setForm({ ...form, amount: -Math.abs(form.amount || 0), category: "Transfer" });
+              }}
+              className={`rounded-md border px-3 py-2 text-sm font-black ${movementType === item.value ? "border-foreground bg-foreground text-background" : "border-border bg-soft text-muted"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         <Input label="Date" type="date" value={form.date} onChange={(value) => setForm({ ...form, date: value })} />
         <Input label="Merchant" value={form.merchant} onChange={(value) => setForm({ ...form, merchant: value })} />
         <SelectField label="Category" value={form.category} onChange={(category) => setForm({ ...form, category })} options={categoryOptions.map((category) => ({ value: category, label: category }))} />
@@ -84,7 +106,7 @@ export function TransactionsManager() {
         <button type="button" onClick={() => setFilters({ direction: "all", category: "all", cardId: "all" })} className="rounded-md border border-border px-3 py-2 text-sm font-black">Reset</button>
       </div>
       <div className="surface overflow-x-auto p-5">
-        <table className="w-full min-w-[860px] text-left text-sm">
+        {visibleTransactions.length ? <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="text-muted">
             <tr>
               <th className="border-b border-border py-3">Date</th>
@@ -118,7 +140,21 @@ export function TransactionsManager() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table> : (
+          <div className="grid min-h-64 place-items-center text-center">
+            <div>
+              <p className="text-xl font-black">No transactions yet</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted">Add your first spend, income, or transfer. You can also import a CSV when you have a bank export ready.</p>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <button type="button" onClick={openAdd} className="inline-flex h-11 items-center gap-2 rounded-md bg-foreground px-4 font-black text-background">
+                  <Plus className="size-4" />
+                  Add transaction
+                </button>
+                <a href="/upload" className="inline-flex h-11 items-center rounded-md border border-border px-4 font-black">Import CSV</a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

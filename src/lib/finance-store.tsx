@@ -337,7 +337,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   }, [setReportExports, supabase, userId]);
 
   const categoryOptions = useMemo(() => {
-    const defaults = ["Income", "Rent", "Bills", "Groceries", "Eating out", "Transport", "Shopping", "Travel", "Health", "Entertainment", "Savings"];
+    const defaults = ["Income", "Rent", "Bills", "Groceries", "Eating out", "Transport", "Shopping", "Travel", "Health", "Entertainment", "Savings", "Transfer"];
     return Array.from(new Set([...defaults, ...customCategories.map((category) => category.name)])).sort((a, b) => a.localeCompare(b));
   }, [customCategories]);
 
