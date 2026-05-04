@@ -5,6 +5,17 @@
 drop table if exists public.report_exports cascade;
 drop table if exists public.debt_plans cascade;
 drop table if exists public.category_suggestions cascade;
+drop table if exists public.credit_statement_cycles cascade;
+drop table if exists public.balance_snapshots cascade;
+drop table if exists public.loan_payments cascade;
+drop table if exists public.loan_ledgers cascade;
+drop table if exists public.bank_reconciliations cascade;
+drop table if exists public.bank_import_rows cascade;
+drop table if exists public.bank_import_batches cascade;
+drop table if exists public.account_ledger_rows cascade;
+drop table if exists public.ledger_categories cascade;
+drop table if exists public.accounting_periods cascade;
+drop table if exists public.finance_years cascade;
 drop table if exists public.csv_templates cascade;
 drop table if exists public.household_members cascade;
 drop table if exists public.households cascade;
@@ -112,10 +123,74 @@ create table public.salary_settings (
   income_card_id uuid references public.cards(id) on delete set null,
   gross_annual numeric(12, 2) not null default 52000,
   pension_percent numeric(5, 2) not null default 5,
+  pension_tax_timing text not null default 'before-tax' check (pension_tax_timing in ('before-tax', 'after-tax')),
   student_loan_plan text not null default 'plan2' check (student_loan_plan in ('none', 'plan1', 'plan2', 'plan5')),
   payday_day int not null default 25 check (payday_day between 1 and 31),
   updated_at timestamptz not null default now()
 );
+
+create table public.finance_years (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  label text not null,
+  start_date date not null,
+  end_date date not null,
+  is_active boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (user_id, label)
+);
+
+create table public.accounting_periods (
+  id uuid primary key default gen_random_uuid(),
+  finance_year_id uuid not null references public.finance_years(id) on delete cascade,
+  period_index int not null check (period_index between 1 and 20),
+  label text not null,
+  start_date date not null,
+  end_date date not null,
+  created_at timestamptz not null default now(),
+  unique (finance_year_id, period_index)
+);
+
+create table public.ledger_categories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  finance_year_id uuid references public.finance_years(id) on delete cascade,
+  name text not null,
+  display_order int not null default 0,
+  colour text not null default '#2457c5',
+  archived boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table public.account_ledger_rows (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  finance_year_id uuid not null references public.finance_years(id) on delete cascade,
+  account_id uuid not null references public.cards(id) on delete cascade,
+  supplier text,
+  external_ref text,
+  description text,
+  period_index int check (period_index between 1 and 20),
+  transaction_date date,
+  gross_amount numeric(12, 2) not null default 0,
+  vat_amount numeric(12, 2) not null default 0,
+  net_amount numeric(12, 2) generated always as (gross_amount - vat_amount) stored,
+  category text not null default 'Uncategorised',
+  notes text,
+  source text not null default 'manual',
+  created_at timestamptz not null default now()
+);
+
+create view public.ledger_category_totals as
+select
+  user_id,
+  finance_year_id,
+  account_id,
+  period_index,
+  category,
+  sum(net_amount) as total
+from public.account_ledger_rows
+group by user_id, finance_year_id, account_id, period_index, category;
 
 create table public.subscriptions (
   id uuid primary key default gen_random_uuid(),
@@ -155,6 +230,96 @@ create table public.csv_templates (
   bank_name text not null,
   columns jsonb not null,
   mapping jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create table public.bank_import_batches (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id uuid references public.cards(id) on delete set null,
+  source_name text not null,
+  file_name text,
+  imported_at timestamptz not null default now(),
+  row_count int not null default 0,
+  status text not null default 'staged' check (status in ('staged', 'imported', 'reconciled', 'discarded'))
+);
+
+create table public.bank_import_rows (
+  id uuid primary key default gen_random_uuid(),
+  batch_id uuid not null references public.bank_import_batches(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  transaction_date date,
+  transaction_type text,
+  description text,
+  value numeric(12, 2) not null default 0,
+  balance numeric(12, 2),
+  account_name text,
+  account_number text,
+  fingerprint text not null,
+  matched_transaction_id uuid references public.transactions(id) on delete set null,
+  ignored boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (user_id, fingerprint)
+);
+
+create table public.bank_reconciliations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id uuid not null references public.cards(id) on delete cascade,
+  reconciliation_date date not null,
+  bank_balance numeric(12, 2) not null,
+  money_in_after_date numeric(12, 2) not null default 0,
+  money_out_after_date numeric(12, 2) not null default 0,
+  expected_balance numeric(12, 2) not null,
+  buffer_amount numeric(12, 2) not null default 500,
+  difference numeric(12, 2) not null,
+  status text not null default 'open' check (status in ('open', 'matched', 'needs_review')),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table public.loan_ledgers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  lender_name text,
+  original_amount numeric(12, 2) not null,
+  current_balance numeric(12, 2) not null,
+  monthly_payment numeric(12, 2),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table public.loan_payments (
+  id uuid primary key default gen_random_uuid(),
+  loan_id uuid not null references public.loan_ledgers(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  payment_date date not null,
+  amount numeric(12, 2) not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table public.balance_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  kind text not null check (kind in ('cash', 'bank', 'savings', 'investment', 'loan', 'hire_purchase', 'credit_card', 'asset', 'liability')),
+  balance numeric(12, 2) not null,
+  snapshot_date date not null default current_date,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table public.credit_statement_cycles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id uuid not null references public.cards(id) on delete cascade,
+  statement_start date not null,
+  statement_end date not null,
+  statement_balance numeric(12, 2) not null,
+  paid_amount numeric(12, 2) not null default 0,
+  due_date date,
   created_at timestamptz not null default now()
 );
 
@@ -199,9 +364,20 @@ alter table public.transactions enable row level security;
 alter table public.pots enable row level security;
 alter table public.wishlist_items enable row level security;
 alter table public.salary_settings enable row level security;
+alter table public.finance_years enable row level security;
+alter table public.accounting_periods enable row level security;
+alter table public.ledger_categories enable row level security;
+alter table public.account_ledger_rows enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.budgets enable row level security;
 alter table public.csv_templates enable row level security;
+alter table public.bank_import_batches enable row level security;
+alter table public.bank_import_rows enable row level security;
+alter table public.bank_reconciliations enable row level security;
+alter table public.loan_ledgers enable row level security;
+alter table public.loan_payments enable row level security;
+alter table public.balance_snapshots enable row level security;
+alter table public.credit_statement_cycles enable row level security;
 alter table public.category_suggestions enable row level security;
 alter table public.debt_plans enable row level security;
 alter table public.report_exports enable row level security;
@@ -239,6 +415,22 @@ create policy "Wishlist items are owned by users" on public.wishlist_items
 create policy "Salary settings are owned by users" on public.salary_settings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+create policy "Finance years are owned by users" on public.finance_years
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Accounting periods follow finance year ownership" on public.accounting_periods
+  for all using (
+    exists (select 1 from public.finance_years fy where fy.id = finance_year_id and fy.user_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.finance_years fy where fy.id = finance_year_id and fy.user_id = auth.uid())
+  );
+
+create policy "Ledger categories are owned by users" on public.ledger_categories
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Ledger rows are owned by users" on public.account_ledger_rows
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 create policy "Subscriptions are owned by users" on public.subscriptions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -247,6 +439,27 @@ create policy "Budgets are owned by users" on public.budgets
 
 create policy "CSV templates are user scoped" on public.csv_templates
   for all using (auth.uid() = user_id or user_id is null) with check (auth.uid() = user_id);
+
+create policy "Bank import batches are owned by users" on public.bank_import_batches
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Bank import rows are owned by users" on public.bank_import_rows
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Bank reconciliations are owned by users" on public.bank_reconciliations
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Loan ledgers are owned by users" on public.loan_ledgers
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Loan payments are owned by users" on public.loan_payments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Balance snapshots are owned by users" on public.balance_snapshots
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Credit statement cycles are owned by users" on public.credit_statement_cycles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "Category suggestions are owned by users" on public.category_suggestions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -77,15 +77,32 @@ test("maps pot, wishlist, and salary rows", () => {
   assert.equal(salary.paydayDay, 25);
   assert.equal(potToRow({ id: "p1", name: "Trip", kind: "goal", current: 10, target: 100, monthlyContribution: 5 }, "user-1").target_amount, 100);
   assert.equal(wishlistToRow({ id: "w1", name: "Chair", price: 300, saved: 20, priority: "High" }, "user-1").saved_amount, 20);
-  assert.deepEqual(Object.keys(salaryToRow({ gross: 60000, pension: 6, pensionTiming: "after-tax", studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1")).sort(), ["gross_annual", "pension_percent", "pension_tax_timing", "student_loan_plan", "updated_at", "user_id"]);
+  const salaryRow = salaryToRow({ gross: 60000, pension: 6, pensionTiming: "after-tax", studentLoan: "plan2", paydayDay: 25, incomeCardId: "00000000-0000-4000-8000-000000000001" }, "user-1");
+  assert.deepEqual(salaryRow, {
+    user_id: "user-1",
+    gross_annual: 60000,
+    pension_percent: 6,
+    pension_tax_timing: "after-tax",
+    student_loan_plan: "plan2",
+    payday_day: 25,
+    income_card_id: "00000000-0000-4000-8000-000000000001",
+    updated_at: salaryRow.updated_at,
+  });
 });
 
 test("maps budget and subscription rows", () => {
   const budget = budgetFromRow({ id: "b1", category: "Groceries", monthly_limit: "450", commitment_type: "reserve", due_day: 20, card_id: "00000000-0000-4000-8000-000000000001" });
   assert.equal(budget.monthlyLimit, 450);
   assert.equal(budget.commitment, "reserve");
-  assert.equal(budgetToRow(budget, "user-1").category, "Groceries");
-  assert.deepEqual(Object.keys(budgetToRow(budget, "user-1")).sort(), ["category", "id", "monthly_limit", "user_id"]);
+  assert.deepEqual(budgetToRow(budget, "user-1"), {
+    id: undefined,
+    user_id: "user-1",
+    category: "Groceries",
+    monthly_limit: 450,
+    commitment_type: "reserve",
+    due_day: 20,
+    card_id: "00000000-0000-4000-8000-000000000001",
+  });
 
   const subscription = subscriptionFromRow({
     id: "s1",
