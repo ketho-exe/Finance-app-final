@@ -15,6 +15,8 @@ drop table if exists public.wishlist_items cascade;
 drop table if exists public.pots cascade;
 drop table if exists public.transactions cascade;
 drop table if exists public.categories cascade;
+drop table if exists public.open_banking_accounts cascade;
+drop table if exists public.open_banking_connections cascade;
 drop table if exists public.cards cascade;
 drop table if exists public.profiles cascade;
 
@@ -24,6 +26,11 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   currency text not null default 'GBP',
+  onboarding_version int not null default 0,
+  onboarding_completed_at timestamptz,
+  onboarding_skipped_at timestamptz,
+  open_banking_intro_completed_at timestamptz,
+  open_banking_intro_skipped_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -57,8 +64,54 @@ create table public.cards (
   overdraft_limit numeric(12, 2),
   apr numeric(7, 4),
   colour text not null default '#0f766e',
+  source text not null default 'manual',
+  external_account_id text,
+  open_banking_account_id uuid,
+  last_synced_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+create table public.open_banking_connections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null default 'gocardless',
+  institution_id text not null,
+  institution_name text,
+  requisition_id text,
+  agreement_id text,
+  status text not null default 'pending',
+  consent_expires_at timestamptz,
+  last_synced_at timestamptz,
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.open_banking_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  connection_id uuid not null references public.open_banking_connections(id) on delete cascade,
+  provider text not null default 'gocardless',
+  external_account_id text not null,
+  card_id uuid references public.cards(id) on delete set null,
+  display_name text,
+  iban_last4 text,
+  currency text default 'GBP',
+  account_type text,
+  owner_name text,
+  current_balance numeric(12, 2),
+  available_balance numeric(12, 2),
+  last_synced_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider, external_account_id)
+);
+
+alter table public.cards
+  add constraint cards_open_banking_account_id_fkey
+  foreign key (open_banking_account_id)
+  references public.open_banking_accounts(id)
+  on delete set null;
 
 create table public.categories (
   id uuid primary key default gen_random_uuid(),
@@ -81,7 +134,12 @@ create table public.transactions (
   amount numeric(12, 2) not null,
   notes text,
   source text not null default 'manual',
-  created_at timestamptz not null default now()
+  external_account_id text,
+  external_transaction_id text,
+  imported_at timestamptz,
+  pending boolean not null default false,
+  created_at timestamptz not null default now(),
+  constraint transactions_open_banking_unique unique (user_id, external_account_id, external_transaction_id)
 );
 
 create table public.pots (
@@ -194,6 +252,8 @@ alter table public.profiles enable row level security;
 alter table public.households enable row level security;
 alter table public.household_members enable row level security;
 alter table public.cards enable row level security;
+alter table public.open_banking_connections enable row level security;
+alter table public.open_banking_accounts enable row level security;
 alter table public.categories enable row level security;
 alter table public.transactions enable row level security;
 alter table public.pots enable row level security;
@@ -222,6 +282,12 @@ create policy "Household members follow owner access" on public.household_member
   );
 
 create policy "Cards are owned by users" on public.cards
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Open banking connections are owned by users" on public.open_banking_connections
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Open banking accounts are owned by users" on public.open_banking_accounts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "Categories are owned by users" on public.categories
@@ -256,3 +322,20 @@ create policy "Debt plans are owned by users" on public.debt_plans
 
 create policy "Report exports are owned by users" on public.report_exports
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql
+set search_path = public;
+
+create trigger set_open_banking_connections_updated_at
+before update on public.open_banking_connections
+for each row execute function public.set_updated_at();
+
+create trigger set_open_banking_accounts_updated_at
+before update on public.open_banking_accounts
+for each row execute function public.set_updated_at();
