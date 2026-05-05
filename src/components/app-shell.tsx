@@ -13,7 +13,6 @@ import {
   FileBarChart,
   Gift,
   Home,
-  Menu,
   Plus,
   PiggyBank,
   ReceiptText,
@@ -53,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { error } = useFinance();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [query, setQuery] = useState("");
   const commands = useMemo(() => navItems.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())), [query]);
 
@@ -70,61 +69,55 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className={cn("fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-panel/92 px-4 py-5 backdrop-blur transition-[width] xl:flex xl:flex-col", sidebarCollapsed ? "w-20" : "w-72")}>
-        <div className={cn("flex items-center", sidebarCollapsed ? "justify-center" : "justify-between gap-3")}>
-          <Link href="/" className={cn("flex min-w-0 items-center gap-3", sidebarCollapsed && "justify-center")}>
-            <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
-            {!sidebarCollapsed ? (
+      {!sidebarHidden ? (
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border bg-panel/92 px-4 py-5 backdrop-blur xl:flex">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="flex min-w-0 items-center gap-3">
+              <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={44} height={44} className="size-11 rounded-lg object-contain" priority />
               <span className="min-w-0">
                 <span className="block text-lg font-black">Ledgerly</span>
                 <span className="text-sm text-muted">Personal finance, clearly</span>
               </span>
-            ) : null}
-          </Link>
-          {!sidebarCollapsed ? (
-            <button type="button" onClick={() => setSidebarCollapsed(true)} className="grid size-9 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground" title="Hide sidebar">
+            </Link>
+            <button type="button" onClick={() => setSidebarHidden(true)} className="grid size-9 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground" title="Hide sidebar">
               <PanelLeftClose className="size-4" />
             </button>
-          ) : null}
-        </div>
-        {sidebarCollapsed ? (
-          <button type="button" onClick={() => setSidebarCollapsed(false)} className="mt-4 grid size-10 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground" title="Show sidebar">
-            <PanelLeftOpen className="size-4" />
-          </button>
-        ) : null}
-        <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {navItems.map((item) => {
-            const active = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-muted transition",
-                  sidebarCollapsed && "justify-center px-0",
-                  "hover:bg-soft hover:text-foreground",
-                  active && "bg-foreground text-background hover:bg-foreground hover:text-background",
-                )}
-                title={sidebarCollapsed ? item.label : undefined}
-              >
-                <Icon className="size-4 shrink-0" />
-                {!sidebarCollapsed ? item.label : null}
-              </Link>
-            );
-          })}
-        </nav>
-        {!sidebarCollapsed ? <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
-          <p className="font-bold text-foreground">Private workspace</p>
-          <p className="mt-1">Your accounts, budgets, goals, and reports stay tied to your profile.</p>
-        </div> : null}
-      </aside>
+          </div>
+          <nav className="mt-8 flex flex-1 flex-col gap-1">
+            {navItems.map((item) => {
+              const active = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-muted transition",
+                    "hover:bg-soft hover:text-foreground",
+                    active && "bg-foreground text-background hover:bg-foreground hover:text-background",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="rounded-md border border-border bg-soft p-3 text-sm text-muted">
+            <p className="font-bold text-foreground">Private workspace</p>
+            <p className="mt-1">Your accounts, budgets, goals, and reports stay tied to your profile.</p>
+          </div>
+        </aside>
+      ) : null}
 
-      <div className={cn("transition-[padding] xl:pl-72", sidebarCollapsed && "xl:pl-20")}>
+      <div
+        className="transition-[padding] xl:pl-[var(--sidebar-offset)]"
+        style={{ "--sidebar-offset": sidebarHidden ? "0rem" : "18rem" } as React.CSSProperties}
+      >
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
           <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <button type="button" onClick={() => setSidebarCollapsed((current) => !current)} className="hidden size-10 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground xl:grid" title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}>
-              <Menu className="size-5" />
+            <button type="button" onClick={() => setSidebarHidden((current) => !current)} className="hidden size-10 place-items-center rounded-md border border-border text-muted hover:bg-soft hover:text-foreground xl:grid" title={sidebarHidden ? "Show sidebar" : "Hide sidebar"}>
+              {sidebarHidden ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
             </button>
             <Link href="/" className="flex items-center gap-2 xl:hidden">
               <Image src="/ledgerly-logo.png" alt="Ledgerly logo" width={36} height={36} className="size-9 rounded-md object-contain" priority />

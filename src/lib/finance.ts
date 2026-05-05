@@ -22,6 +22,11 @@ export type Transaction = {
   amount: number;
   cardId: string;
   notes?: string;
+  source?: "manual" | "csv" | "open_banking";
+  externalAccountId?: string;
+  externalTransactionId?: string;
+  importedAt?: string;
+  pending?: boolean;
 };
 
 export type MoneyCard = {
@@ -34,6 +39,10 @@ export type MoneyCard = {
   overdraft?: number;
   apr?: number;
   colour: string;
+  source?: "manual" | "csv" | "open_banking";
+  externalAccountId?: string;
+  openBankingAccountId?: string;
+  lastSyncedAt?: string;
 };
 
 export type Pot = {

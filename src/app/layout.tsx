@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
+import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { ThemeProvider } from "@/components/theme-provider";
 import { FinanceProvider } from "@/lib/finance-store";
 
@@ -38,7 +39,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FinanceProvider>
             <AuthGate>
-              <AppShell>{children}</AppShell>
+              <OnboardingGate>
+                <AppShell>{children}</AppShell>
+              </OnboardingGate>
             </AuthGate>
           </FinanceProvider>
         </ThemeProvider>

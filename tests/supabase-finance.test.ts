@@ -40,6 +40,10 @@ test("maps card rows to UI cards and back", () => {
     credit_limit: 2000,
     overdraft_limit: null,
     colour: "bg-[#0f766e]",
+    source: "manual",
+    external_account_id: null,
+    open_banking_account_id: null,
+    last_synced_at: null,
   });
 });
 
@@ -65,6 +69,10 @@ test("maps transaction rows to UI transactions and back", () => {
     card_id: "00000000-0000-4000-8000-000000000001",
     notes: "Weekly shop",
     source: "manual",
+    external_account_id: null,
+    external_transaction_id: null,
+    imported_at: null,
+    pending: false,
   });
 });
 

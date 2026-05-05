@@ -28,6 +28,10 @@ export function cardFromRow(row: Record<string, unknown>): MoneyCard {
     overdraft: nullableNumber(row.overdraft_limit),
     apr: nullableNumber(row.apr),
     colour: String(row.colour ?? "bg-[#0f766e]"),
+    source: (row.source as MoneyCard["source"]) ?? "manual",
+    externalAccountId: row.external_account_id ? String(row.external_account_id) : undefined,
+    openBankingAccountId: row.open_banking_account_id ? String(row.open_banking_account_id) : undefined,
+    lastSyncedAt: row.last_synced_at ? String(row.last_synced_at) : undefined,
   };
 }
 
@@ -43,6 +47,10 @@ export function cardToRow(card: MoneyCard, userId: string) {
     overdraft_limit: card.overdraft ?? null,
     ...(card.apr !== undefined ? { apr: card.apr } : {}),
     colour: card.colour,
+    source: card.source ?? "manual",
+    external_account_id: card.externalAccountId ?? null,
+    open_banking_account_id: rowId(card.openBankingAccountId ?? "") ?? null,
+    last_synced_at: card.lastSyncedAt ?? null,
   };
 }
 
@@ -55,6 +63,11 @@ export function transactionFromRow(row: Record<string, unknown>): Transaction {
     amount: numberValue(row.amount),
     cardId: String(row.card_id ?? ""),
     notes: row.notes ? String(row.notes) : undefined,
+    source: (row.source as Transaction["source"]) ?? "manual",
+    externalAccountId: row.external_account_id ? String(row.external_account_id) : undefined,
+    externalTransactionId: row.external_transaction_id ? String(row.external_transaction_id) : undefined,
+    importedAt: row.imported_at ? String(row.imported_at) : undefined,
+    pending: Boolean(row.pending),
   };
 }
 
@@ -68,7 +81,11 @@ export function transactionToRow(transaction: Transaction, userId: string) {
     amount: transaction.amount,
     card_id: rowId(transaction.cardId) ?? null,
     notes: transaction.notes ?? null,
-    source: "manual",
+    source: transaction.source ?? "manual",
+    external_account_id: transaction.externalAccountId ?? null,
+    external_transaction_id: transaction.externalTransactionId ?? null,
+    imported_at: transaction.importedAt ?? null,
+    pending: transaction.pending ?? false,
   };
 }
 

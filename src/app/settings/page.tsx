@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { CustomCategoriesContent } from "@/components/custom-categories-content";
+import { OpenBankingSettings } from "@/components/open-banking/open-banking-settings";
 import { PageHeader } from "@/components/page-header";
 
 const settings = [
@@ -34,6 +35,7 @@ export default function SettingsPage() {
           <h2 className="text-xl font-black">Workspace defaults</h2>
           <p className="mt-2 text-sm leading-6 text-muted">Ledgerly keeps each signed-in workspace separate, uses GBP by default, and gives every user a private set of accounts, transactions, goals, budgets, and reports.</p>
         </section>
+        <OpenBankingSettings />
         <CustomCategoriesContent />
       </div>
     </>
